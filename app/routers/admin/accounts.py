@@ -14,6 +14,7 @@ from app.models.domain import Domain
 from app.models.activity_log import ActivityLog
 from app.config import settings
 from app.services.account_manager import AccountManager
+from app.services.ports import PortAllocatorService
 from app.templating import templates
 
 router = APIRouter(prefix="/admin", tags=["admin-accounts"])
@@ -98,6 +99,16 @@ async def create_account(
     db.add(new_user)
     db.flush()
 
+    # Allocate port for user's future instances (tracked in DB).
+    try:
+        allocated = PortAllocatorService.allocate_for_user(db, new_user.id, purpose="instance")
+    except Exception as exc:
+        db.rollback()
+        return templates.TemplateResponse(
+            "admin/accounts_create.html",
+            {"request": request, "user": admin, "packages": packages, "error": f"Port allocation failed: {exc}"},
+        )
+
     # Create server resources
     pkg_dict = {
         "php_version": package.php_version,
@@ -126,7 +137,7 @@ async def create_account(
     # Log and save
     log = ActivityLog(
         user_id=admin.id, action="CREATE_ACCOUNT",
-        description=f"Created account for {username} ({domain})",
+        description=f"Created account for {username} ({domain}) port={allocated.port}",
         ip_address=request.client.host,
         status="success" if result["success"] else "error"
     )
@@ -191,6 +202,8 @@ async def terminate_account(user_id: int, db: Session = Depends(get_db), admin=D
     AccountManager.terminate_account(account.username, account.primary_domain)
 
     username = account.username
+    # Release ports
+    PortAllocatorService.release_user_ports(db, account.id)
     db.delete(account)
 
     log = ActivityLog(user_id=admin.id, action="TERMINATE_ACCOUNT",

@@ -56,6 +56,10 @@ class Settings:
     ADMIN_PUBLIC_PORT: int = int(os.getenv("ADMIN_PUBLIC_PORT", "2020"))
     USER_PUBLIC_PORT: int = int(os.getenv("USER_PUBLIC_PORT", "3030"))
 
+    # Port allocation for hosted instances/apps
+    PORT_RANGE_START: int = int(os.getenv("PORT_RANGE_START", "3031"))
+    PORT_RANGE_END: int = int(os.getenv("PORT_RANGE_END", "9000"))
+
     PANEL_VERSION: str = "1.0.0"
 
 settings = Settings()
