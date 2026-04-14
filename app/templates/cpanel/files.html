@@ -60,10 +60,16 @@
     <div class="card jupiter-card">
       <div class="card-header jupiter-card-header"><i class="fas fa-list me-2"></i>Items</div>
       <div class="card-body p-0">
+        <div class="p-2 border-bottom d-flex gap-2 align-items-center small">
+          <button class="btn btn-sm btn-outline-danger" type="button" onclick="bulkDelete()">Delete selected</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" onclick="bulkZip()">Zip selected</button>
+          <span class="text-muted">حدد ملفات/مجلدات ثم نفّذ عملية جماعية.</span>
+        </div>
         <div class="table-responsive">
           <table class="table table-sm table-hover mb-0 align-middle">
             <thead class="table-light small">
               <tr>
+                <th style="width:34px"><input type="checkbox" onclick="toggleAll(this)"></th>
                 <th>Name</th>
                 <th class="text-end">Size</th>
                 <th class="text-center">Perms</th>
@@ -85,6 +91,9 @@
 
               {% for it in items %}
               <tr>
+                <td>
+                  <input class="form-check-input fm-item" type="checkbox" value="{{ it.path }}">
+                </td>
                 <td>
                   {% if it.is_dir %}
                     <i class="fas fa-folder me-2 text-warning"></i>
@@ -109,7 +118,7 @@
                 </td>
               </tr>
               {% else %}
-              <tr><td colspan="4" class="text-muted text-center p-4">Folder is empty.</td></tr>
+              <tr><td colspan="5" class="text-muted text-center p-4">Folder is empty.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -121,4 +130,48 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectedItems() {
+  return Array.from(document.querySelectorAll('.fm-item:checked')).map(el => el.value);
+}
+function toggleAll(el) {
+  document.querySelectorAll('.fm-item').forEach(x => x.checked = el.checked);
+}
+function bulkDelete() {
+  const items = selectedItems();
+  if (!items.length) return alert('Select items first');
+  if (!confirm('Delete ' + items.length + ' items?')) return;
+  const base = '{{ current_path if current_path != "." else "" }}';
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/cpanel/files/bulk-delete';
+  form.innerHTML = `
+    <input type="hidden" name="paths" value="${base}">
+    <input type="hidden" name="items" value="${items.join(',')}">
+  `;
+  document.body.appendChild(form);
+  form.submit();
+}
+function bulkZip() {
+  const items = selectedItems();
+  if (!items.length) return alert('Select items first');
+  const dest = prompt('Archive name (relative to current folder)', 'archive.zip');
+  if (!dest) return;
+  const base = '{{ current_path if current_path != "." else "" }}';
+  const destPath = (base ? (base + '/' + dest) : dest);
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/cpanel/files/zip';
+  form.innerHTML = `
+    <input type="hidden" name="dest_zip" value="${destPath}">
+    <input type="hidden" name="items" value="${items.join(',')}">
+    <input type="hidden" name="current" value="${base}">
+  `;
+  document.body.appendChild(form);
+  form.submit();
+}
+</script>
 {% endblock %}
