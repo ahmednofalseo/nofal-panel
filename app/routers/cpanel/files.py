@@ -12,6 +12,21 @@ from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-files"])
 
+ALLOWED_UPLOAD_EXTENSIONS = {
+    # Web
+    ".html", ".htm", ".css", ".js", ".map",
+    ".php", ".phtml",
+    # Data / configs (safe subset)
+    ".txt", ".md", ".json", ".xml", ".csv", ".log", ".sql",
+    ".ini", ".conf",
+    # Images
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico",
+    # Archives
+    ".zip", ".tar", ".gz", ".tgz", ".bz2", ".xz",
+}
+
+ALLOWED_DOTFILES = {".htaccess", ".user.ini", ".well-known"}
+
 
 def get_user_home(username: str) -> str:
     return f"{settings.ACCOUNTS_HOME}/{username}"
@@ -26,6 +41,11 @@ def safe_path(username: str, path: str) -> str:
     if not full_path.startswith(home):
         return home  # Prevent path traversal
     return full_path
+
+
+def _safe_basename(name: str) -> str:
+    name = (name or "").strip()
+    return os.path.basename(name)
 
 
 @router.get("/files", response_class=HTMLResponse)
@@ -70,7 +90,26 @@ async def upload_file(
 ):
     upload_dir = safe_path(user.username, path)
     for file in files:
-        file_path = os.path.join(upload_dir, file.filename)
+        original = (file.filename or "").strip()
+        filename = os.path.basename(original)
+        if not filename or filename in (".", ".."):
+            continue
+
+        # Hidden files: only allow a small safe list
+        if filename.startswith(".") and filename not in ALLOWED_DOTFILES and not filename.startswith(".well-known"):
+            return RedirectResponse(
+                url=f"/cpanel/files?path={path}&error=Hidden+files+blocked",
+                status_code=302,
+            )
+
+        _, ext = os.path.splitext(filename.lower())
+        if ext and ext not in ALLOWED_UPLOAD_EXTENSIONS and filename not in ALLOWED_DOTFILES:
+            return RedirectResponse(
+                url=f"/cpanel/files?path={path}&error=File+type+not+allowed",
+                status_code=302,
+            )
+
+        file_path = os.path.join(upload_dir, filename)
         with open(file_path, "wb") as f:
             content = await file.read()
             f.write(content)
@@ -84,7 +123,12 @@ async def create_folder(
     user=Depends(get_cpanel_user)
 ):
     parent = safe_path(user.username, path)
-    new_folder = os.path.join(parent, folder_name)
+    folder = _safe_basename(folder_name)
+    if not folder or folder in (".", ".."):
+        return RedirectResponse(url=f"/cpanel/files?path={path}&error=Invalid+folder+name", status_code=302)
+    if folder.startswith(".") and folder not in ALLOWED_DOTFILES and not folder.startswith(".well-known"):
+        return RedirectResponse(url=f"/cpanel/files?path={path}&error=Hidden+folders+blocked", status_code=302)
+    new_folder = os.path.join(parent, folder)
     os.makedirs(new_folder, exist_ok=True)
     return RedirectResponse(url=f"/cpanel/files?path={path}&success=Folder+created", status_code=302)
 
@@ -95,7 +139,8 @@ async def delete_file(
     item_name: str = Form(...),
     user=Depends(get_cpanel_user)
 ):
-    item_path = safe_path(user.username, os.path.join(path, item_name))
+    name = _safe_basename(item_name)
+    item_path = safe_path(user.username, os.path.join(path, name))
     if os.path.exists(item_path):
         if os.path.isdir(item_path):
             shutil.rmtree(item_path)
@@ -112,8 +157,14 @@ async def rename_file(
     user=Depends(get_cpanel_user)
 ):
     parent = safe_path(user.username, path)
-    old_path = os.path.join(parent, old_name)
-    new_path = os.path.join(parent, new_name)
+    old_base = _safe_basename(old_name)
+    new_base = _safe_basename(new_name)
+    if not new_base or new_base in (".", ".."):
+        return RedirectResponse(url=f"/cpanel/files?path={path}&error=Invalid+name", status_code=302)
+    if new_base.startswith(".") and new_base not in ALLOWED_DOTFILES and not new_base.startswith(".well-known"):
+        return RedirectResponse(url=f"/cpanel/files?path={path}&error=Hidden+files+blocked", status_code=302)
+    old_path = os.path.join(parent, old_base)
+    new_path = os.path.join(parent, new_base)
     if os.path.exists(old_path):
         os.rename(old_path, new_path)
     return RedirectResponse(url=f"/cpanel/files?path={path}&success=Renamed", status_code=302)

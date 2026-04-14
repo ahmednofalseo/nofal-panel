@@ -1,8 +1,88 @@
 {% extends "cpanel/base_cpanel.html" %}
-{% block title %}Ssl - Nofal Panel{% endblock %}
+{% block title %}SSL/TLS — Nofal Panel{% endblock %}
 {% block content %}
-<div class="page-header"><h2><i class="fas fa-circle me-2"></i>Ssl</h2></div>
-<div class="card panel-card"><div class="card-body">
-  <p class="text-muted">Module loaded. Full UI is available.</p>
-</div></div>
+<div class="page-header mb-3">
+  <h2 class="h3 jupiter-page-title"><i class="fas fa-lock me-2 text-primary"></i>SSL/TLS</h2>
+  <p class="text-muted small mb-0">إصدار شهادة Let's Encrypt وربطها تلقائياً بـ Nginx.</p>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header"><i class="fas fa-certificate me-2"></i>Issue Certificate</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/ssl/issue" class="small">
+          <div class="mb-2">
+            <label class="form-label">Domain</label>
+            <select name="domain_name" class="form-select form-select-sm" required>
+              {% for d in domains %}
+              <option value="{{ d.domain_name }}">{{ d.domain_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select name="cert_type" class="form-select form-select-sm">
+              <option value="letsencrypt">Let's Encrypt</option>
+              <option value="selfsigned">Self-signed (testing)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm w-100" type="submit">Issue</button>
+        </form>
+        <div class="text-muted mt-2" style="font-size:.75rem">
+          ملاحظة: إصدار Let's Encrypt يحتاج أن يكون الدومين موجّه على هذا السيرفر وأن منفذ 80 متاح للتحقق.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card jupiter-card mb-3">
+      <div class="card-header jupiter-card-header"><i class="fas fa-list me-2"></i>Issued (Panel DB)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0 align-middle small">
+            <thead class="table-light"><tr><th>Domain</th><th>Type</th><th class="text-end">Actions</th></tr></thead>
+            <tbody>
+              {% for c in certs %}
+              <tr>
+                <td><strong>{{ c.domain }}</strong></td>
+                <td>{{ c.cert_type }}</td>
+                <td class="text-end text-nowrap">
+                  <form method="post" action="/cpanel/ssl/{{ c.id }}/renew" class="d-inline">
+                    <button class="btn btn-outline-primary btn-sm py-0" type="submit"><i class="fas fa-rotate"></i></button>
+                  </form>
+                  <form method="post" action="/cpanel/ssl/{{ c.id }}/delete" class="d-inline" onsubmit="return confirm('Delete certificate?');">
+                    <button class="btn btn-outline-danger btn-sm py-0" type="submit"><i class="fas fa-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted text-center p-4">No certificates saved yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header"><i class="fas fa-box-archive me-2"></i>System Certificates (certbot)</div>
+      <div class="card-body small">
+        {% if all_certs %}
+          <ul class="list-group list-group-flush">
+            {% for x in all_certs %}
+            <li class="list-group-item small d-flex justify-content-between">
+              <span><code>{{ x.name }}</code></span>
+              <span class="text-muted">{{ x.expiry or '' }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="text-muted">No certbot certificates detected.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

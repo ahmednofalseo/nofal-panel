@@ -1,8 +1,97 @@
 {% extends "cpanel/base_cpanel.html" %}
-{% block title %}Cron - Nofal Panel{% endblock %}
+{% block title %}Cron Jobs — Nofal Panel{% endblock %}
 {% block content %}
-<div class="page-header"><h2><i class="fas fa-circle me-2"></i>Cron</h2></div>
-<div class="card panel-card"><div class="card-body">
-  <p class="text-muted">Module loaded. Full UI is available.</p>
-</div></div>
+<div class="page-header mb-3">
+  <h2 class="h3 jupiter-page-title"><i class="fas fa-clock me-2 text-primary"></i>Cron Jobs</h2>
+  <p class="text-muted small mb-0">إضافة وجدولة أوامر كرون لحسابك.</p>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header"><i class="fas fa-plus-circle me-2"></i>Create Job</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/cron/create" class="small">
+          <div class="mb-2">
+            <label class="form-label">Name (optional)</label>
+            <input class="form-control form-control-sm" name="name" placeholder="Backup">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Command</label>
+            <input class="form-control form-control-sm font-monospace" name="command" placeholder="/usr/bin/php /home/USER/public_html/artisan schedule:run" required>
+          </div>
+          <div class="row g-2">
+            <div class="col-4">
+              <label class="form-label">Minute</label>
+              <input class="form-control form-control-sm" name="minute" value="*" required>
+            </div>
+            <div class="col-4">
+              <label class="form-label">Hour</label>
+              <input class="form-control form-control-sm" name="hour" value="*" required>
+            </div>
+            <div class="col-4">
+              <label class="form-label">Day</label>
+              <input class="form-control form-control-sm" name="day_of_month" value="*" required>
+            </div>
+          </div>
+          <div class="row g-2 mt-1">
+            <div class="col-6">
+              <label class="form-label">Month</label>
+              <input class="form-control form-control-sm" name="month" value="*" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Weekday</label>
+              <input class="form-control form-control-sm" name="day_of_week" value="*" required>
+            </div>
+          </div>
+          <div class="mb-3 mt-2">
+            <label class="form-label">Email output (optional)</label>
+            <input class="form-control form-control-sm" name="email_output" placeholder="you@example.com">
+          </div>
+          <button class="btn btn-primary btn-sm w-100" type="submit">Create</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header"><i class="fas fa-list me-2"></i>Jobs</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0 align-middle small">
+            <thead class="table-light">
+              <tr>
+                <th>Schedule</th>
+                <th>Command</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for j in jobs %}
+              <tr>
+                <td><code>{{ j.minute }} {{ j.hour }} {{ j.day_of_month }} {{ j.month }} {{ j.day_of_week }}</code></td>
+                <td><span class="font-monospace">{{ j.command }}</span></td>
+                <td class="text-end text-nowrap">
+                  <form method="post" action="/cpanel/cron/{{ j.id }}/toggle" class="d-inline">
+                    <button class="btn btn-outline-secondary btn-sm py-0" type="submit" title="Toggle">{{ 'On' if j.is_active else 'Off' }}</button>
+                  </form>
+                  <form method="post" action="/cpanel/cron/{{ j.id }}/delete" class="d-inline" onsubmit="return confirm('Delete cron job?');">
+                    <button class="btn btn-outline-danger btn-sm py-0" type="submit"><i class="fas fa-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted text-center p-4">No cron jobs.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer small text-muted">
+        ملاحظة: اللوحة تكتب كرون فعلياً عبر <code>crontab -u {{ user.username }}</code>.
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
