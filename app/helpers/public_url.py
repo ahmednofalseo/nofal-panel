@@ -19,3 +19,18 @@ def public_panel_url(request: Request, port: int) -> str:
     if (scheme == "https" and port == 443) or (scheme == "http" and port == 80):
         return f"{scheme}://{host}"
     return f"{scheme}://{host}:{port}"
+
+
+def public_panel_path(request: Request, port: int, path: str) -> str:
+    """
+    Absolute URL to a path on the panel bound to ``port``.
+
+    When ADMIN_PUBLIC_PORT and USER_PUBLIC_PORT are both 443, ``public_panel_url`` is only
+    the origin (e.g. https://x/) — redirecting there would loop. Append real routes here.
+    """
+    base = public_panel_url(request, port).rstrip("/")
+    if not path.startswith("/"):
+        path = "/" + path
+    if base == "/":
+        return path
+    return f"{base}{path}"

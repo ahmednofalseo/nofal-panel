@@ -9,7 +9,7 @@ from app.auth import verify_password, create_access_token, get_password_hash
 from app.models.user import User
 from app.models.activity_log import ActivityLog
 from app.security import rate_limiter
-from app.helpers.public_url import public_panel_url
+from app.helpers.public_url import public_panel_path
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,10 +24,16 @@ async def login_page(request: Request):
             user_role = payload.get("role", "user")
             if user_role == "admin":
                 if settings.APP_MODE == "user":
-                    return RedirectResponse(url=public_panel_url(request, settings.ADMIN_PUBLIC_PORT), status_code=302)
+                    return RedirectResponse(
+                        url=public_panel_path(request, settings.ADMIN_PUBLIC_PORT, "/admin/dashboard"),
+                        status_code=302,
+                    )
                 return RedirectResponse(url="/admin/dashboard", status_code=302)
             if settings.APP_MODE == "admin":
-                return RedirectResponse(url=public_panel_url(request, settings.USER_PUBLIC_PORT), status_code=302)
+                return RedirectResponse(
+                    url=public_panel_path(request, settings.USER_PUBLIC_PORT, "/cpanel/dashboard"),
+                    status_code=302,
+                )
             return RedirectResponse(url="/cpanel/dashboard", status_code=302)
     return templates.TemplateResponse("login.html", {"request": request})
 
@@ -82,9 +88,17 @@ async def login(
 
     # Redirect based on role
     if user.role == "admin":
-        redirect_url = public_panel_url(request, settings.ADMIN_PUBLIC_PORT) if settings.APP_MODE == "user" else "/admin/dashboard"
+        redirect_url = (
+            public_panel_path(request, settings.ADMIN_PUBLIC_PORT, "/admin/dashboard")
+            if settings.APP_MODE == "user"
+            else "/admin/dashboard"
+        )
     else:
-        redirect_url = public_panel_url(request, settings.USER_PUBLIC_PORT) if settings.APP_MODE == "admin" else "/cpanel/dashboard"
+        redirect_url = (
+            public_panel_path(request, settings.USER_PUBLIC_PORT, "/cpanel/dashboard")
+            if settings.APP_MODE == "admin"
+            else "/cpanel/dashboard"
+        )
     response = RedirectResponse(url=redirect_url, status_code=302)
     response.set_cookie(key="access_token", value=token, httponly=True, max_age=86400, samesite="lax")
     return response
