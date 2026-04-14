@@ -1,0 +1,68 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Analytics - Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-chart-pie me-2"></i>Admin Analytics</h2>
+  <span class="text-muted">Top consumers (disk + file count) with quick insight like WHM</span>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card panel-card">
+      <div class="card-header"><strong>Largest Disk Consumers</strong></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>User</th><th class="text-end">Disk (MB)</th><th class="text-end">Actions</th></tr></thead>
+            <tbody>
+              {% for row in top_disk %}
+              <tr>
+                <td><strong>{{ row.user.username }}</strong><br><small class="text-muted">{{ row.user.primary_domain or '' }}</small></td>
+                <td class="text-end">{{ row.disk_mb }}</td>
+                <td class="text-end">
+                  <a class="btn btn-xs btn-outline-info" href="/admin/accounts/{{ row.user.id }}/edit">Edit</a>
+                  <a class="btn btn-xs btn-outline-secondary" href="/admin/accounts/{{ row.user.id }}/login-as">Login as</a>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted text-center py-3">No accounts</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card panel-card">
+      <div class="card-header"><strong>Accounts with Highest File Count</strong></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>User</th><th class="text-end">Files</th><th class="text-end">Actions</th></tr></thead>
+            <tbody>
+              {% for row in top_files %}
+              <tr>
+                <td><strong>{{ row.user.username }}</strong><br><small class="text-muted">{{ row.user.primary_domain or '' }}</small></td>
+                <td class="text-end">{{ row.file_count }}</td>
+                <td class="text-end">
+                  <a class="btn btn-xs btn-outline-info" href="/admin/accounts/{{ row.user.id }}/edit">Edit</a>
+                  <a class="btn btn-xs btn-outline-secondary" href="/admin/accounts/{{ row.user.id }}/login-as">Login as</a>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted text-center py-3">No accounts</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer small text-muted">
+        ملاحظة: العدّ يتم عبر <code>find</code> وقد يكون ثقيلًا على السيرفر لو فيه ملايين الملفات (سنحوّله لـ job مجدول).
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

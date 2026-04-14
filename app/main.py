@@ -41,11 +41,12 @@ def create_app() -> FastAPI:
     app.include_router(status_router.router)
 
     if mode in ("full", "admin"):
-        from app.routers.admin import accounts, packages, server, dns
+        from app.routers.admin import accounts, packages, server, dns, analytics
         app.include_router(accounts.router)
         app.include_router(packages.router)
         app.include_router(server.router)
         app.include_router(dns.router)
+        app.include_router(analytics.router)
 
     if mode in ("full", "user"):
         from app.routers.cpanel import dashboard, email, domains, databases, ftp, ssl, cron, files, terminal, features
