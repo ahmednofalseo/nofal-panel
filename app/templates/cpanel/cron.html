@@ -12,6 +12,7 @@
       <div class="card-header jupiter-card-header"><i class="fas fa-plus-circle me-2"></i>Create Job</div>
       <div class="card-body">
         <form method="post" action="/cpanel/cron/create" class="small">
+{{ csrf_hidden(request) }}
           <div class="mb-2">
             <label class="form-label">Name (optional)</label>
             <input class="form-control form-control-sm" name="name" placeholder="Backup">
@@ -74,9 +75,11 @@
                 <td><span class="font-monospace">{{ j.command }}</span></td>
                 <td class="text-end text-nowrap">
                   <form method="post" action="/cpanel/cron/{{ j.id }}/toggle" class="d-inline">
+{{ csrf_hidden(request) }}
                     <button class="btn btn-outline-secondary btn-sm py-0" type="submit" title="Toggle">{{ 'On' if j.is_active else 'Off' }}</button>
                   </form>
                   <form method="post" action="/cpanel/cron/{{ j.id }}/delete" class="d-inline" onsubmit="return confirm('Delete cron job?');">
+{{ csrf_hidden(request) }}
                     <button class="btn btn-outline-danger btn-sm py-0" type="submit"><i class="fas fa-trash"></i></button>
                   </form>
                 </td>

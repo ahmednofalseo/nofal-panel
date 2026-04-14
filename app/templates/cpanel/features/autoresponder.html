@@ -8,6 +8,7 @@
     <div class="border rounded p-3 mb-3 small">
       <strong>{{ e.email }}</strong>
       <form method="post" action="/cpanel/email/{{ e.id }}/autoresponder" class="mt-2">
+{{ csrf_hidden(request) }}
         <div class="mb-2">
           <label class="form-label">الموضوع</label>
           <input name="subject" class="form-control form-control-sm" value="{{ e.autoresponder_subject or 'Out of office' }}" required>

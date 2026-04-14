@@ -7,6 +7,7 @@
   <div class="card-body">
     <p class="small text-muted">مفتاح SSH العام لتثبيته على الخادم (يدوياً أو عبر أتمتة لاحقة).</p>
     <form method="post" action="/cpanel/ssh/save">
+{{ csrf_hidden(request) }}
       <div class="mb-2">
         <label class="form-label">المفتاح العام</label>
         <textarea name="pubkey" class="form-control form-control-sm font-monospace" rows="4">{{ cfg.pubkey or '' }}</textarea>

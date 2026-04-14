@@ -13,6 +13,7 @@
   </div>
   <div class="card-body">
     <form method="post" action="/cpanel/files/edit">
+{{ csrf_hidden(request) }}
       <input type="hidden" name="path" value="{{ file_path }}">
       <textarea name="content" class="form-control font-monospace small" rows="22" spellcheck="false">{{ content }}</textarea>
       <div class="d-flex gap-2 mt-2">

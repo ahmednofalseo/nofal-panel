@@ -61,6 +61,7 @@
       <div class="card-header jupiter-card-header"><i class="fas fa-plus-circle me-2"></i>إنشاء صندوق بريد</div>
       <div class="card-body">
         <form method="post" action="/cpanel/email/create" id="formCreateEmail" class="needs-validation" novalidate>
+{{ csrf_hidden(request) }}
           <div class="row g-2 mb-2">
             <div class="col-7">
               <label class="form-label small text-muted mb-0">اسم المستخدم</label>
@@ -135,6 +136,7 @@
                   <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#conn{{ m.id }}"><i class="fas fa-plug"></i></button>
                   <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#pwdModal{{ m.id }}"><i class="fas fa-key"></i></button>
                   <form method="post" action="/cpanel/email/{{ m.id }}/delete" class="d-inline" onsubmit="return confirm('حذف {{ m.email }} نهائياً؟');">
+{{ csrf_hidden(request) }}
                     <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
                   </form>
                 </td>
@@ -173,6 +175,7 @@
             <div class="modal-content">
               <div class="modal-header py-2"><h6 class="modal-title">تغيير كلمة المرور — {{ m.email }}</h6><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
               <form method="post" action="/cpanel/email/{{ m.id }}/change-password">
+{{ csrf_hidden(request) }}
                 <div class="modal-body">
                   <label class="form-label small">كلمة مرور جديدة (8+)</label>
                   <input type="password" name="new_password" class="form-control form-control-sm" minlength="8" required autocomplete="new-password">

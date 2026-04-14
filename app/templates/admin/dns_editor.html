@@ -1,8 +1,175 @@
 {% extends "admin/base_admin.html" %}
-{% block title %}Dns_editor - Nofal Panel{% endblock %}
+{% block title %}DNS zone — {{ domain.domain_name }} — Nofal Panel{% endblock %}
 {% block content %}
-<div class="page-header"><h2><i class="fas fa-circle me-2"></i>Dns_editor</h2></div>
-<div class="card panel-card"><div class="card-body">
-  <p class="text-muted">Coming soon - Full implementation in progress.</p>
-</div></div>
+{% set params = request.query_params %}
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <div>
+    <h2><i class="fas fa-atlas me-2"></i>Zone: {{ domain.domain_name }}</h2>
+    <span class="text-muted">Panel DB records stay aligned with BIND zone file on successful writes.</span>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="/admin/dns" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>All zones</a>
+    <a class="btn btn-outline-info btn-sm" href="/admin/dns/{{ domain.domain_name | urlq }}/check" target="_blank" rel="noopener"><i class="fas fa-stethoscope me-1"></i>named-checkzone (JSON)</a>
+  </div>
+</div>
+
+{% if params.get('error') %}
+<div class="alert alert-danger alert-dismissible fade show">
+  <i class="fas fa-exclamation-triangle me-2"></i>{{ params.get('error') }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card panel-card h-100">
+      <div class="card-header"><strong><i class="fas fa-heartbeat me-2"></i>Zone check</strong></div>
+      <div class="card-body">
+        {% if zone_check.valid %}
+        <p class="mb-2"><span class="badge bg-success">named-checkzone OK</span></p>
+        {% else %}
+        <p class="mb-2"><span class="badge bg-danger">named-checkzone failed</span></p>
+        {% endif %}
+        <pre class="small bg-dark text-light p-2 rounded mb-3" style="max-height:180px;overflow:auto;">{{ zone_check.output or '—' }}</pre>
+        <form method="post" action="/admin/dns/{{ domain.domain_name | urlq }}/reload" class="d-inline">
+{{ csrf_hidden(request) }}
+          <button type="submit" class="btn btn-warning btn-sm"><i class="fas fa-sync me-1"></i>Reload BIND</button>
+        </form>
+        <small class="text-muted d-block mt-2">Reload runs <code>systemctl reload bind9</code> (or <code>named</code>) on the panel host.</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card panel-card h-100">
+      <div class="card-header"><strong><i class="fas fa-plus-circle me-2"></i>Add record</strong></div>
+      <div class="card-body">
+        <form method="post" action="/admin/dns/{{ domain.domain_name | urlq }}/add-record" id="addRecordForm">
+{{ csrf_hidden(request) }}
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Type</label>
+              <select name="record_type" class="form-select form-select-sm" id="rrType" required>
+                <option value="A">A — IPv4 host</option>
+                <option value="AAAA">AAAA — IPv6 host</option>
+                <option value="CNAME">CNAME — alias</option>
+                <option value="MX">MX — mail exchanger</option>
+                <option value="TXT">TXT — SPF / DKIM / verification</option>
+                <option value="NS">NS — nameserver</option>
+                <option value="SRV">SRV — service</option>
+                <option value="PTR">PTR — reverse</option>
+                <option value="CAA">CAA — certificate policy</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Name / host</label>
+              <input name="name" class="form-control form-control-sm" required maxlength="255" placeholder="@  أو www  أو subdomain">
+              <small class="text-muted">Use <code>@</code> for apex (stored as shown; BIND file may use <code>@</code>).</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">TTL (seconds)</label>
+              <input type="number" name="ttl" class="form-control form-control-sm" value="3600" min="60" max="86400" required>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Value / target</label>
+              <input name="value" class="form-control form-control-sm font-monospace" required placeholder="IPv4, FQDN, or quoted TXT">
+            </div>
+            <div class="col-md-4" id="mxPriorityWrap">
+              <label class="form-label">MX priority</label>
+              <input type="number" name="priority" class="form-control form-control-sm" value="10" min="0" max="65535">
+            </div>
+          </div>
+          <div class="small text-muted mt-2" id="rrHints">
+            <strong>A:</strong> IPv4 only · <strong>AAAA:</strong> IPv6 · <strong>CNAME:</strong> target FQDN ends with dot optional · <strong>MX:</strong> mail host + priority · <strong>TXT:</strong> include quotes in value if required by your data.
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm mt-3"><i class="fas fa-plus me-1"></i>Add &amp; deploy to zone</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card panel-card mb-3">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <strong><i class="fas fa-database me-2"></i>Panel database records</strong>
+    <input type="search" class="form-control form-control-sm" style="max-width:220px" id="dbFilter" placeholder="Filter name / type…">
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0" id="dbRecordsTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Type</th><th>Name</th><th>Value</th><th>TTL</th><th>Prio</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr data-row="{{ (r.name ~ ' ' ~ r.record_type ~ ' ' ~ r.value)|lower }}">
+            <td>{{ r.id }}</td>
+            <td><span class="badge bg-secondary">{{ r.record_type }}</span></td>
+            <td><code>{{ r.name }}</code></td>
+            <td class="small font-monospace text-break">{{ r.value }}</td>
+            <td>{{ r.ttl }}</td>
+            <td>{{ r.priority }}</td>
+            <td class="text-end">
+              <form method="post" action="/admin/dns/{{ domain.domain_name | urlq }}/delete-record/{{ r.id }}" class="d-inline" onsubmit="return confirm('Delete {{ r.record_type }} {{ r.name }} from BIND and database?');">
+{{ csrf_hidden(request) }}
+                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No custom rows in the database yet. SOA/NS defaults may still exist only in the zone file.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card panel-card">
+  <div class="card-header"><strong><i class="fas fa-file-code me-2"></i>Records parsed from BIND zone file</strong></div>
+  <div class="card-body p-0">
+    <p class="small text-muted px-3 pt-3 mb-2">Read-only view from <code>{{ domain.domain_name }}.zone</code>. Compare with the table above to spot drift.</p>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Name</th><th>TTL</th><th>Type</th><th>Value</th></tr></thead>
+        <tbody>
+          {% for z in zone_records %}
+          <tr>
+            <td><code>{{ z.name }}</code></td>
+            <td>{{ z.ttl }}</td>
+            <td><span class="badge bg-info text-dark">{{ z.type }}</span></td>
+            <td class="small font-monospace text-break">{{ z.value }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-muted py-4">Zone file missing or empty on this host.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var sel = document.getElementById('rrType');
+  var mx = document.getElementById('mxPriorityWrap');
+  function syncMx() {
+    if (!sel || !mx) return;
+    mx.style.display = (sel.value === 'MX') ? '' : 'none';
+  }
+  if (sel) { sel.addEventListener('change', syncMx); syncMx(); }
+
+  var inp = document.getElementById('dbFilter');
+  var tbl = document.getElementById('dbRecordsTable');
+  if (inp && tbl) {
+    inp.addEventListener('input', function () {
+      var q = (inp.value || '').toLowerCase();
+      tbl.querySelectorAll('tbody tr[data-row]').forEach(function (tr) {
+        tr.style.display = !q || (tr.getAttribute('data-row') || '').indexOf(q) !== -1 ? '' : 'none';
+      });
+    });
+  }
+})();
+</script>
 {% endblock %}

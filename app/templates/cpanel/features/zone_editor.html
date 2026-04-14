@@ -21,6 +21,7 @@
       <div class="card-header jupiter-card-header">سجل جديد</div>
       <div class="card-body">
         <form method="post" action="/cpanel/zone-editor/add" class="small">
+{{ csrf_hidden(request) }}
           <input type="hidden" name="domain_id" value="{{ selected.id }}">
           <div class="mb-2">
             <label class="form-label">النوع</label>
@@ -65,6 +66,7 @@
               <td><small>{{ rec.value[:80] }}{% if rec.value|length > 80 %}…{% endif %}</small></td>
               <td>
                 <form method="post" action="/cpanel/zone-editor/delete/{{ rec.id }}" class="m-0" onsubmit="return confirm('حذف السجل؟');">
+{{ csrf_hidden(request) }}
                   <button type="submit" class="btn btn-outline-danger btn-sm py-0">حذف</button>
                 </form>
               </td>

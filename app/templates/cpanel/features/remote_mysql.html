@@ -6,6 +6,7 @@
   <div class="card-body">
     <p class="small text-muted">قائمة العناوين المسموح لها بالاتصال بخادم MySQL (يُطبَّق على الخادم عبر جدار ناري أو صلاحيات MySQL).</p>
     <form method="post" action="/cpanel/remote-mysql/add" class="row g-2 align-items-end">
+{{ csrf_hidden(request) }}
       <div class="col-md-8">
         <label class="form-label">عنوان IP أو اسم مضيف</label>
         <input name="host" class="form-control form-control-sm" placeholder="203.0.113.10" required>
@@ -23,6 +24,7 @@
     <li class="list-group-item d-flex justify-content-between align-items-center small">
       <code>{{ h }}</code>
       <form method="post" action="/cpanel/remote-mysql/remove" class="m-0">
+{{ csrf_hidden(request) }}
         <input type="hidden" name="host" value="{{ h }}">
         <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
       </form>

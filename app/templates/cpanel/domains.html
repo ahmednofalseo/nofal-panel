@@ -21,6 +21,7 @@
       <div class="card-header jupiter-card-header">نطاق إضافي (Addon)</div>
       <div class="card-body">
         <form method="post" action="/cpanel/domains/add-addon" class="small">
+{{ csrf_hidden(request) }}
           <div class="mb-2">
             <label class="form-label">اسم النطاق</label>
             <input name="domain_name" class="form-control form-control-sm" placeholder="example.net" required>
@@ -35,6 +36,7 @@
       <div class="card-header jupiter-card-header">نطاق فرعي</div>
       <div class="card-body">
         <form method="post" action="/cpanel/domains/add-subdomain" class="small">
+{{ csrf_hidden(request) }}
           <div class="row g-2">
             <div class="col-5">
               <label class="form-label">الجزء الفرعي</label>
@@ -64,6 +66,7 @@
       <div class="card-header jupiter-card-header">نطاق متوقف (Parked)</div>
       <div class="card-body">
         <form method="post" action="/cpanel/domains/add-parked" class="small">
+{{ csrf_hidden(request) }}
           <input name="domain_name" class="form-control form-control-sm mb-2" placeholder="parked.com" required>
           <button type="submit" class="btn btn-primary btn-sm">إضافة</button>
         </form>
@@ -75,6 +78,7 @@
       <div class="card-header jupiter-card-header">إعادة توجيه</div>
       <div class="card-body">
         <form method="post" action="/cpanel/domains/add-redirect" class="small">
+{{ csrf_hidden(request) }}
           <input name="domain_name" class="form-control form-control-sm mb-1" placeholder="from.com" required>
           <input name="redirect_to" class="form-control form-control-sm mb-1" placeholder="https://target.com" required>
           <select name="redirect_type" class="form-select form-select-sm mb-2"><option value="301">301</option><option value="302">302</option></select>
@@ -106,6 +110,7 @@
             <td class="text-end">
               {% if d.domain_type != 'main' %}
               <form method="post" action="/cpanel/domains/{{ d.id }}/delete" class="d-inline" onsubmit="return confirm('حذف النطاق؟');">
+{{ csrf_hidden(request) }}
                 <button type="submit" class="btn btn-outline-danger btn-sm py-0">حذف</button>
               </form>
               {% else %}

@@ -8,6 +8,7 @@
       <div class="card-header jupiter-card-header">إضافة إعادة توجيه</div>
       <div class="card-body">
         <form method="post" action="/cpanel/domains/add-redirect" class="small">
+{{ csrf_hidden(request) }}
           <div class="mb-2">
             <label class="form-label">النطاق</label>
             <input name="domain_name" class="form-control form-control-sm" placeholder="example.com" required>

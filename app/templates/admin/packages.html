@@ -38,6 +38,7 @@
             <td>
               <a href="/admin/packages/{{ p.id }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
               <form method="post" action="/admin/packages/{{ p.id }}/delete" class="d-inline" onsubmit="return confirm('Delete package {{ p.name }}? Only if no accounts use it.');">
+{{ csrf_hidden(request) }}
                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
               </form>
             </td>

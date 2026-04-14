@@ -32,6 +32,7 @@
             </td>
             <td class="text-end">
               <form method="post" action="/admin/plugins/{{ p.id }}/toggle" class="d-inline">
+{{ csrf_hidden(request) }}
                 <button class="btn btn-sm {% if p.enabled %}btn-outline-danger{% else %}btn-outline-success{% endif %}" type="submit">
                   {% if p.enabled %}Disable{% else %}Enable{% endif %}
                 </button>

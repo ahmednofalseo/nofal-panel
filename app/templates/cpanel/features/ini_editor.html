@@ -7,6 +7,7 @@
   <div class="card-body">
     <p class="small text-muted">مقتطف PHP.ini أو .user.ini — انسخه إلى مجلد الموقع على الخادم أو اربطه بأتمتة النشر.</p>
     <form method="post" action="/cpanel/ini-editor/save">
+{{ csrf_hidden(request) }}
       <textarea name="snippet" class="form-control font-monospace small" rows="16">{{ snippet }}</textarea>
       <button type="submit" class="btn btn-primary btn-sm mt-2">حفظ</button>
     </form>

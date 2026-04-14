@@ -203,7 +203,7 @@
 {% block extra_js %}
 <script>
 function manageService(name, action) {
-  fetch(`/admin/server/services/${name}/${action}`, {method: 'POST'})
+  fetch(`/admin/server/services/${name}/${action}`, { method: 'POST', headers: { ...csrfFetchHeaders() } })
     .then(r => r.json())
     .then(data => {
       if(data.success) location.reload();

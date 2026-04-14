@@ -29,6 +29,7 @@
       <div class="card-header jupiter-card-header"><i class="fas fa-cloud-upload-alt me-2"></i>Upload</div>
       <div class="card-body">
         <form method="post" action="/cpanel/files/upload" enctype="multipart/form-data" class="small">
+{{ csrf_hidden(request) }}
           <input type="hidden" name="path" value="{{ current_path if current_path != '.' else '' }}">
           <div class="mb-2">
             <input class="form-control form-control-sm" type="file" name="files" multiple required>
@@ -45,6 +46,7 @@
       <div class="card-header jupiter-card-header"><i class="fas fa-folder-plus me-2"></i>Create Folder</div>
       <div class="card-body">
         <form method="post" action="/cpanel/files/create-folder" class="small">
+{{ csrf_hidden(request) }}
           <input type="hidden" name="path" value="{{ current_path if current_path != '.' else '' }}">
           <div class="mb-2">
             <label class="form-label">Folder name</label>
@@ -111,6 +113,7 @@
                     <a class="btn btn-outline-primary btn-sm py-0" href="/cpanel/files/edit?path={{ it.path }}"><i class="fas fa-pen"></i></a>
                   {% endif %}
                   <form method="post" action="/cpanel/files/delete" class="d-inline" onsubmit="return confirm('Delete {{ it.name }} ?');">
+{{ csrf_hidden(request) }}
                     <input type="hidden" name="path" value="{{ current_path if current_path != '.' else '' }}">
                     <input type="hidden" name="item_name" value="{{ it.name }}">
                     <button class="btn btn-outline-danger btn-sm py-0" type="submit"><i class="fas fa-trash"></i></button>

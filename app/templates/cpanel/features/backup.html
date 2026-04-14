@@ -7,6 +7,7 @@
   <div class="card-body">
     <p class="text-muted small">جدولة تفضيلية داخل اللوحة؛ التنفيذ الفعلي على الخادم يتطلب ربطاً بأداة النسخ الاحتياطي (rsync، واجهة النسخ، …).</p>
     <form method="post" action="/cpanel/backup/save" class="row g-3">
+{{ csrf_hidden(request) }}
       <div class="col-12">
         <div class="form-check">
           <input class="form-check-input" type="checkbox" name="enabled" value="1" id="bk_en" {% if cfg.enabled %}checked{% endif %}>

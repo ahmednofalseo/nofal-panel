@@ -5,6 +5,7 @@
 <div class="card jupiter-card mb-3">
   <div class="card-body">
     <form method="post" action="/cpanel/track-dns" class="row g-2 align-items-end">
+{{ csrf_hidden(request) }}
       <div class="col-md-6">
         <label class="form-label">اسم النطاق أو المضيف</label>
         <input name="q" class="form-control form-control-sm" value="{{ q or '' }}" placeholder="example.com" required>

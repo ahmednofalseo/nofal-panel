@@ -1,8 +1,180 @@
 {% extends "admin/base_admin.html" %}
-{% block title %}Accounts_edit - Nofal Panel{% endblock %}
+{% block title %}Edit account — {{ account.username }} — Nofal Panel{% endblock %}
 {% block content %}
-<div class="page-header"><h2><i class="fas fa-circle me-2"></i>Accounts_edit</h2></div>
-<div class="card panel-card"><div class="card-body">
-  <p class="text-muted">Coming soon - Full implementation in progress.</p>
-</div></div>
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <div>
+    <h2><i class="fas fa-user-edit me-2"></i>Edit account</h2>
+    <span class="text-muted">{{ account.username }} — panel database record (WHM » Modify an Account)</span>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="/admin/accounts/{{ account.id }}/login-as" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener"><i class="fas fa-sign-in-alt me-1"></i>Login as user</a>
+    <a href="/admin/accounts" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>All accounts</a>
+  </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>{{ error }}</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card panel-card h-100">
+      <div class="card-header"><strong><i class="fas fa-server me-2"></i>Provisioning snapshot</strong></div>
+      <div class="card-body small">
+        <p class="mb-1"><span class="text-muted">Username</span><br><code>{{ account.username }}</code></p>
+        <p class="mb-1"><span class="text-muted">Linux user</span><br><code>{{ account.server_user or '—' }}</code></p>
+        <p class="mb-1"><span class="text-muted">Primary domain</span><br><strong>{{ account.primary_domain or '—' }}</strong></p>
+        <p class="mb-1"><span class="text-muted">Account IP</span><br>{{ account.ip_address or '—' }}</p>
+        <p class="mb-0">
+          <span class="text-muted">Status</span><br>
+          {% if account.is_suspended %}
+          <span class="badge bg-danger">Suspended</span>
+          {% if account.suspend_reason %}<span class="text-muted d-block mt-1">{{ account.suspend_reason }}</span>{% endif %}
+          {% elif account.is_active %}
+          <span class="badge bg-success">Active</span>
+          {% else %}
+          <span class="badge bg-secondary">Inactive</span>
+          {% endif %}
+        </p>
+        <hr>
+        <p class="mb-0 text-muted">Changing username, primary domain, or system paths is not supported from this form — use terminate + recreate or extend provisioning services.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card panel-card h-100">
+      <div class="card-header"><strong><i class="fas fa-chart-bar me-2"></i>Usage summary</strong></div>
+      <div class="card-body small">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><td>Disk used</td><td class="text-end"><strong>{{ account.disk_used_mb or 0 }}</strong> / {{ account.disk_quota_mb or 0 }} MB</td></tr>
+            <tr><td>Bandwidth used</td><td class="text-end"><strong>{{ account.bandwidth_used_mb or 0 }}</strong> / {% if account.bandwidth_limit_mb == 0 %}∞{% else %}{{ account.bandwidth_limit_mb }}{% endif %} MB</td></tr>
+            <tr><td>Domains</td><td class="text-end">{{ counts.domains }}</td></tr>
+            <tr><td>Mailboxes</td><td class="text-end">{{ counts.emails }}</td></tr>
+            <tr><td>MySQL DBs</td><td class="text-end">{{ counts.databases }}</td></tr>
+            <tr><td>FTP users</td><td class="text-end">{{ counts.ftp }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card panel-card h-100">
+      <div class="card-header"><strong><i class="fas fa-box me-2"></i>Current package</strong></div>
+      <div class="card-body small">
+        {% if account.package %}
+        <p class="mb-1"><strong>{{ account.package.name }}</strong></p>
+        <p class="text-muted mb-0">Disk {{ account.package.disk_quota_mb }} MB · mail {{ account.package.email_limit }} · DB {{ account.package.db_limit }}</p>
+        {% else %}
+        <p class="text-muted mb-0">No package linked.</p>
+        {% endif %}
+        <hr>
+        <p class="mb-0 text-muted">This form updates the <strong>panel database</strong> (email, package link, per-account limits, contact fields). It does not resize disks on the OS or rewrite nginx by itself — run your reconciler or edit server configs where applicable.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post" action="/admin/accounts/{{ account.id }}/edit">
+{{ csrf_hidden(request) }}
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card panel-card">
+        <div class="card-header"><strong><i class="fas fa-id-card me-2"></i>Account &amp; billing contact</strong></div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Email <span class="text-danger">*</span></label>
+            <input type="email" name="email" class="form-control" required maxlength="100" value="{% if form %}{{ form.email }}{% else %}{{ account.email }}{% endif %}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Package <span class="text-danger">*</span></label>
+            <select name="package_id" class="form-select" required>
+              {% for pkg in all_packages %}
+              <option value="{{ pkg.id }}" {% if (form and form.package_id == pkg.id) or (not form and account.package_id == pkg.id) %}selected{% endif %}>
+                {{ pkg.name }}{% if not pkg.is_active %} (inactive){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Inactive packages are listed so you can audit assignments; prefer active packages for production.</small>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">Disk quota (MB) <span class="text-danger">*</span></label>
+              <input type="number" min="0" name="disk_quota_mb" class="form-control" required value="{% if form %}{{ form.disk_quota_mb }}{% else %}{{ account.disk_quota_mb }}{% endif %}">
+              <small class="text-muted">Must be ≥ current disk usage ({{ account.disk_used_mb or 0 }} MB).</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Bandwidth / month (MB) <span class="text-danger">*</span></label>
+              <input type="number" min="0" name="bandwidth_limit_mb" class="form-control" required value="{% if form %}{{ form.bandwidth_limit_mb }}{% else %}{{ account.bandwidth_limit_mb }}{% endif %}">
+              <small class="text-muted">0 = unlimited. If capped, must be ≥ recorded usage.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card panel-card">
+        <div class="card-header"><strong><i class="fas fa-address-book me-2"></i>Contact details</strong></div>
+        <div class="card-body row g-2">
+          <div class="col-md-6">
+            <label class="form-label">First name</label>
+            <input type="text" name="first_name" class="form-control" maxlength="50" value="{% if form %}{{ form.first_name }}{% else %}{{ account.first_name or '' }}{% endif %}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Last name</label>
+            <input type="text" name="last_name" class="form-control" maxlength="50" value="{% if form %}{{ form.last_name }}{% else %}{{ account.last_name or '' }}{% endif %}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Company</label>
+            <input type="text" name="company" class="form-control" maxlength="100" value="{% if form %}{{ form.company }}{% else %}{{ account.company or '' }}{% endif %}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control" maxlength="20" value="{% if form %}{{ form.phone }}{% else %}{{ account.phone or '' }}{% endif %}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Country</label>
+            <input type="text" name="country" class="form-control" maxlength="50" value="{% if form %}{{ form.country }}{% else %}{{ account.country or '' }}{% endif %}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">City</label>
+            <input type="text" name="city" class="form-control" maxlength="50" value="{% if form %}{{ form.city }}{% else %}{{ account.city or '' }}{% endif %}">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-3 d-flex flex-wrap gap-2">
+    <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Save changes</button>
+    <a href="/admin/accounts" class="btn btn-secondary btn-lg">Cancel</a>
+  </div>
+</form>
+
+<div class="card panel-card mt-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong><i class="fas fa-history me-2"></i>Recent log lines mentioning this user</strong>
+    <small class="text-muted">From activity log descriptions</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0">
+        <thead><tr><th>When</th><th>Action</th><th>Detail</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for log in recent_logs %}
+          <tr>
+            <td class="text-nowrap small">{{ log.created_at }}</td>
+            <td><code>{{ log.action }}</code></td>
+            <td class="small">{{ log.description or '—' }}</td>
+            <td><span class="badge bg-{% if log.status == 'success' %}success{% elif log.status == 'error' %}danger{% else %}secondary{% endif %}">{{ log.status }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-muted py-3">No matching log entries.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}

@@ -67,7 +67,7 @@
 {% block extra_js %}
 <script>
 function svcAction(name, action) {
-  fetch('/admin/server/services/' + name + '/' + action, { method: 'POST' })
+  fetch('/admin/server/services/' + name + '/' + action, { method: 'POST', headers: { ...csrfFetchHeaders() } })
     .then(r => r.json())
     .then(data => {
       if (data.success) location.reload();
@@ -76,7 +76,7 @@ function svcAction(name, action) {
 }
 
 function reconcileNginx() {
-  fetch('/admin/server/nginx/reconcile', { method: 'POST' })
+  fetch('/admin/server/nginx/reconcile', { method: 'POST', headers: { ...csrfFetchHeaders() } })
     .then(r => r.json())
     .then(data => {
       if (data.success) {

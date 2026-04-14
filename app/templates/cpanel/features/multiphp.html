@@ -9,6 +9,7 @@
     <p class="small text-muted">يُحفظ في اللوحة؛ ربط PHP-FPM/Nginx لكل نطاق يتم على الخادم.</p>
     {% for d in domains %}
     <form method="post" action="/cpanel/multiphp/set" class="row g-2 align-items-center border-bottom py-2 mb-0 small">
+{{ csrf_hidden(request) }}
       <input type="hidden" name="domain_name" value="{{ d.domain_name }}">
       <div class="col-md-5"><strong>{{ d.domain_name }}</strong></div>
       <div class="col-md-4">

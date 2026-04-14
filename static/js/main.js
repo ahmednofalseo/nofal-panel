@@ -2,6 +2,13 @@
 //   NOFAL PANEL - Main JavaScript
 // =============================================
 
+/** Merge into fetch() headers for POST/PUT/PATCH/DELETE (CSRF middleware). */
+function csrfFetchHeaders() {
+  const m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+  const t = m ? decodeURIComponent(m[1]) : '';
+  return t ? { 'X-CSRF-Token': t } : {};
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // Sidebar Toggle
   const sidebarToggle = document.getElementById('sidebarToggle');
@@ -114,7 +121,7 @@ function manageService(name, action) {
 
   fetch(`/admin/server/services/${name}/${action}`, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: { ...csrfFetchHeaders(), 'Content-Type': 'application/json' },
   })
   .then(r => r.json())
   .then(data => {
