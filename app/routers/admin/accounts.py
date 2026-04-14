@@ -15,6 +15,7 @@ from app.models.activity_log import ActivityLog
 from app.config import settings
 from app.services.account_manager import AccountManager
 from app.services.ports import PortAllocatorService
+from app.services.account_provisioning import AccountProvisioningService
 from app.templating import templates
 
 router = APIRouter(prefix="/admin", tags=["admin-accounts"])
@@ -99,45 +100,45 @@ async def create_account(
     db.add(new_user)
     db.flush()
 
-    # Allocate port for user's future instances (tracked in DB).
-    try:
-        allocated = PortAllocatorService.allocate_for_user(db, new_user.id, purpose="instance")
-    except Exception as exc:
-        db.rollback()
-        return templates.TemplateResponse(
-            "admin/accounts_create.html",
-            {"request": request, "user": admin, "packages": packages, "error": f"Port allocation failed: {exc}"},
-        )
-
     # Create server resources
     pkg_dict = {
         "php_version": package.php_version,
         "max_upload_size_mb": package.max_upload_size_mb,
         "memory_limit_mb": package.memory_limit_mb,
         "max_execution_time": package.max_execution_time,
+        "package_id": package.id,
+        "disk_quota_mb": package.disk_quota_mb,
+        "bandwidth_limit_mb": package.bandwidth_limit_mb,
+        "email_limit": package.email_limit,
+        "db_limit": package.db_limit,
+        "ftp_limit": package.ftp_limit,
+        "subdomain_limit": package.subdomain_limit,
+        "addon_domain_limit": package.addon_domain_limit,
     }
-    result = AccountManager.create_account(
-        username=username, domain=domain, password=password,
-        email=email, ip_address=ip_address, package=pkg_dict
+    # Use enterprise provisioning wrapper (ports + domain row).
+    prov = AccountProvisioningService.create_account(
+        db,
+        username=username,
+        email=email,
+        password=password,
+        domain=domain,
+        ip_address=ip_address,
+        package=pkg_dict,
+        first_name=first_name,
+        last_name=last_name,
+        company=company,
     )
+    result = prov.details.get("result") if prov.details else {"success": prov.success, "error": prov.error}
 
     if result["success"]:
-        pub = result.get("account_info", {}).get("public_html") or f"{settings.ACCOUNTS_HOME}/{username}/public_html"
-        main_domain_row = Domain(
-            user_id=new_user.id,
-            domain_name=domain.strip().lower(),
-            domain_type="main",
-            document_root=pub,
-            ip_address=ip_address,
-            config_file=f"{settings.NGINX_SITES_AVAILABLE}/{domain.strip()}.conf",
-            is_active=True,
-        )
-        db.add(main_domain_row)
+        allocated_port = (prov.details or {}).get("allocated_port")
+    else:
+        allocated_port = None
 
     # Log and save
     log = ActivityLog(
         user_id=admin.id, action="CREATE_ACCOUNT",
-        description=f"Created account for {username} ({domain}) port={allocated.port}",
+        description=f"Created account for {username} ({domain}) port={allocated_port or '-'}",
         ip_address=request.client.host,
         status="success" if result["success"] else "error"
     )
@@ -199,11 +200,9 @@ async def terminate_account(user_id: int, db: Session = Depends(get_db), admin=D
         raise HTTPException(status_code=404, detail="Account not found")
 
     # Remove server resources
-    AccountManager.terminate_account(account.username, account.primary_domain)
+    AccountProvisioningService.terminate_account(db, user=account)
 
     username = account.username
-    # Release ports
-    PortAllocatorService.release_user_ports(db, account.id)
     db.delete(account)
 
     log = ActivityLog(user_id=admin.id, action="TERMINATE_ACCOUNT",
