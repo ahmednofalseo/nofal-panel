@@ -10,6 +10,7 @@ from app.services.system import SystemService
 from app.services.nginx import NginxService
 from app.services.mysql_service import MySQLService
 from app.services.postfix import MailService
+from app.services.nginx_reconciler import NginxReconciler
 from app.templating import templates
 
 router = APIRouter(prefix="/admin", tags=["admin-server"])
@@ -69,6 +70,12 @@ async def server_services(request: Request, admin=Depends(get_admin_user)):
 @router.post("/server/services/{service}/{action}")
 async def manage_service(service: str, action: str, admin=Depends(get_admin_user)):
     result = SystemService.manage_service(service, action)
+    return JSONResponse(result)
+
+@router.post("/server/nginx/reconcile")
+async def reconcile_nginx(db: Session = Depends(get_db), admin=Depends(get_admin_user)):
+    """Rebuild missing vhosts from DB desired state then reload safely."""
+    result = NginxReconciler.reconcile_domains(db)
     return JSONResponse(result)
 
 
