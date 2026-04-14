@@ -10,6 +10,7 @@ import struct
 import termios
 import subprocess
 import json
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from app.auth import get_cpanel_user, decode_token
@@ -52,6 +53,18 @@ async def terminal_ws(websocket: WebSocket):
     username = payload.get("sub", "")
     role = payload.get("role", "user")
 
+    # Session logging (server-side)
+    log_dir = f"/var/log/nofal-panel/terminal/{username}"
+    log_path = f"{log_dir}/{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.log"
+    log_fh = None
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        log_fh = open(log_path, "a", buffering=1, encoding="utf-8", errors="replace")
+        log_fh.write(f"[session_start] user={username} role={role} ts={datetime.now(timezone.utc).isoformat()}\n")
+        log_fh.write(f"[client] ip={websocket.client.host if websocket.client else '-'} ua={websocket.headers.get('user-agent','-')}\n")
+    except Exception:
+        log_fh = None
+
     # Determine shell command
     if role == "admin":
         # Admin gets bash (still restricted to their session)
@@ -61,7 +74,8 @@ async def terminal_ws(websocket: WebSocket):
         # Try to run as the Linux user if they exist
         home_dir = f"/home/{username}"
         if os.path.exists(home_dir):
-            shell_cmd = ["sudo", "-u", username, "/bin/bash", "--login"]
+            # Use restricted bash to reduce risk; still supports basic shell usage.
+            shell_cmd = ["sudo", "-u", username, "/bin/bash", "--restricted", "--noprofile", "--norc"]
             shell_user = username
         else:
             # Restricted fallback shell - simulate environment
@@ -124,6 +138,11 @@ async def terminal_ws(websocket: WebSocket):
             try:
                 data = await loop.run_in_executor(None, _read_fd, master_fd)
                 if data:
+                    if log_fh:
+                        try:
+                            log_fh.write(f"[out] {data.decode('utf-8', errors='replace')}\n")
+                        except Exception:
+                            pass
                     await websocket.send_bytes(data)
                 else:
                     await asyncio.sleep(0.01)
@@ -163,6 +182,11 @@ async def terminal_ws(websocket: WebSocket):
                     except Exception:
                         pass
                 else:
+                    if log_fh:
+                        try:
+                            log_fh.write(f"[in] {data.decode('utf-8', errors='replace')}\n")
+                        except Exception:
+                            pass
                     os.write(master_fd, data)
             elif "text" in raw:
                 text = raw["text"]
@@ -174,6 +198,11 @@ async def terminal_ws(websocket: WebSocket):
                             rows = msg.get("rows", 24)
                             _resize_pty(master_fd, cols, rows)
                     except Exception:
+                        if log_fh:
+                            try:
+                                log_fh.write(f"[in] {text}\n")
+                            except Exception:
+                                pass
                         os.write(master_fd, text.encode("utf-8"))
             elif raw.get("type") == "websocket.disconnect":
                 break
@@ -196,6 +225,12 @@ async def terminal_ws(websocket: WebSocket):
             os.close(master_fd)
         except Exception:
             pass
+        if log_fh:
+            try:
+                log_fh.write(f"[session_end] ts={datetime.now(timezone.utc).isoformat()}\n")
+                log_fh.close()
+            except Exception:
+                pass
 
 
 def _resize_pty(fd, cols, rows):
