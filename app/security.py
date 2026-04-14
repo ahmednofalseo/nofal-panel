@@ -23,6 +23,19 @@ def get_csrf_header(request: Request) -> str | None:
     return request.headers.get("x-csrf-token")
 
 
+def is_csrf_exempt(request: Request) -> bool:
+    """
+    Skip double-submit CSRF check for specific routes.
+
+    Login POST must work without JavaScript (base.html injects token via JS only).
+    Login is already rate-limited in auth router.
+    """
+    if request.method.upper() != "POST":
+        return False
+    path = request.url.path.rstrip("/") or "/"
+    return path == "/auth/login"
+
+
 @dataclass
 class RateLimitResult:
     allowed: bool

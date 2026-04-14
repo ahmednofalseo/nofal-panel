@@ -16,7 +16,7 @@ from app.paths import STATIC_DIR
 from app.templating import templates
 from app.database import init_db, SessionLocal
 from app.auth import get_password_hash
-from app.security import CSRF_COOKIE_NAME, generate_csrf_token, get_csrf_cookie, get_csrf_header
+from app.security import CSRF_COOKIE_NAME, generate_csrf_token, get_csrf_cookie, get_csrf_header, is_csrf_exempt
 from app.helpers.public_url import public_panel_url
 
 def create_app() -> FastAPI:
@@ -104,6 +104,8 @@ def create_app() -> FastAPI:
     async def csrf_protect_middleware(request: Request, call_next):
         # Protect state-changing requests for browser UI.
         if request.method.upper() in ("POST", "PUT", "PATCH", "DELETE"):
+            if is_csrf_exempt(request):
+                return await call_next(request)
             cookie_token = get_csrf_cookie(request)
             header_token = get_csrf_header(request)
 

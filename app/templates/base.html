@@ -24,7 +24,9 @@
   const csrfName = "{{ CSRF_COOKIE_NAME | default('csrf_token') }}";
   const token = getCookie(csrfName);
   if (!token) return;
-  document.querySelectorAll("form[method='post'], form[method='POST']").forEach((f) => {
+  document.querySelectorAll("form").forEach((f) => {
+    const method = (f.getAttribute("method") || "get").toLowerCase();
+    if (method !== "post") return;
     if (f.querySelector("input[name='csrf_token']")) return;
     const i = document.createElement("input");
     i.type = "hidden";
