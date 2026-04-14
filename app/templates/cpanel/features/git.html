@@ -1,0 +1,19 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}Git — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fab fa-git-alt me-2"></i>Git™</h2></div>
+<div class="card jupiter-card">
+  <div class="card-header jupiter-card-header">مستودعات تحت مجلد الحساب</div>
+  <div class="card-body">
+    {% if repos %}
+    <ul class="list-group list-group-flush">
+      {% for r in repos %}
+      <li class="list-group-item small"><code>{{ r }}</code></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted mb-0">لم يُعثر على مجلدات <code>.git</code> ضمن مسار الحساب، أو المسار غير موجود.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

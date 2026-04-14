@@ -75,21 +75,13 @@
   </a>
   {% endmacro %}
 
-  {% macro tool_planned(icon, title_ar, key) %}
-  <a href="/cpanel/feature-unavailable?key={{ key }}" class="jupiter-tool-item jupiter-tool-soon">
-    <span class="jupiter-tool-icon"><i class="{{ icon }}"></i></span>
-    <span class="jupiter-tool-title">{{ title_ar }}</span>
-    <span class="jupiter-tool-sub">قريباً</span>
-  </a>
-  {% endmacro %}
-
   <section class="jupiter-section mt-4">
     <h2 class="jupiter-section-title">الملفات</h2>
     <div class="jupiter-tool-grid">
       {{ tool_item('/cpanel/files', 'fas fa-folder-open', 'مدير الملفات') }}
-      {{ tool_planned('fas fa-chart-pie', 'استخدام القرص', 'disk_usage') }}
-      {{ tool_planned('fas fa-cloud-upload-alt', 'النسخ الاحتياطي', 'backup') }}
-      {{ tool_planned('fab fa-git-alt', 'Git™', 'git') }}
+      {{ tool_item('/cpanel/disk-usage', 'fas fa-chart-pie', 'استخدام القرص', 'تفاصيل') }}
+      {{ tool_item('/cpanel/backup', 'fas fa-cloud-upload-alt', 'النسخ الاحتياطي', 'جدولة') }}
+      {{ tool_item('/cpanel/git', 'fab fa-git-alt', 'Git™', 'مستودعات') }}
     </div>
   </section>
 
@@ -97,8 +89,8 @@
     <h2 class="jupiter-section-title">قواعد البيانات</h2>
     <div class="jupiter-tool-grid">
       {{ tool_item('/cpanel/databases', 'fas fa-database', 'MySQL® Databases') }}
-      {{ tool_planned('fas fa-external-link-alt', 'phpMyAdmin', 'phpmyadmin') }}
-      {{ tool_planned('fas fa-plug', 'Remote MySQL', 'remote_mysql') }}
+      {{ tool_item('/cpanel/phpmyadmin', 'fas fa-external-link-alt', 'phpMyAdmin', 'رابط') }}
+      {{ tool_item('/cpanel/remote-mysql', 'fas fa-plug', 'Remote MySQL', 'عناوين مسموحة') }}
     </div>
   </section>
 
@@ -106,9 +98,9 @@
     <h2 class="jupiter-section-title">النطاقات</h2>
     <div class="jupiter-tool-grid">
       {{ tool_item('/cpanel/domains', 'fas fa-globe', 'النطاقات') }}
-      {{ tool_planned('fas fa-sitemap', 'نطاقات إضافية', 'addon_domains') }}
-      {{ tool_planned('fas fa-random', 'إعادة التوجيه', 'redirects') }}
-      {{ tool_planned('fas fa-atlas', 'محرر المنطقة', 'zone_editor') }}
+      {{ tool_item('/cpanel/addon-domains', 'fas fa-sitemap', 'نطاقات إضافية', 'قائمة') }}
+      {{ tool_item('/cpanel/redirects', 'fas fa-random', 'إعادة التوجيه', 'قواعد') }}
+      {{ tool_item('/cpanel/zone-editor', 'fas fa-atlas', 'محرر المنطقة', 'DNS') }}
     </div>
   </section>
 
@@ -116,19 +108,19 @@
     <h2 class="jupiter-section-title">البريد</h2>
     <div class="jupiter-tool-grid">
       {{ tool_item('/cpanel/email', 'fas fa-envelope', 'حسابات البريد') }}
-      {{ tool_planned('fas fa-share', 'الموجهات', 'forwarders') }}
-      {{ tool_planned('fas fa-reply', 'الرد الآلي', 'autoresponder') }}
-      {{ tool_planned('fas fa-shield-alt', 'عامل السبام', 'spam') }}
+      {{ tool_item('/cpanel/forwarders', 'fas fa-share', 'الموجهات', 'إدارة') }}
+      {{ tool_item('/cpanel/autoresponder', 'fas fa-reply', 'الرد الآلي', 'نصوص') }}
+      {{ tool_item('/cpanel/spam', 'fas fa-shield-alt', 'عامل السبام', 'مستوى') }}
     </div>
   </section>
 
   <section class="jupiter-section">
     <h2 class="jupiter-section-title">المقاييس</h2>
     <div class="jupiter-tool-grid">
-      {{ tool_planned('fas fa-users', 'الزوار', 'visitors') }}
-      {{ tool_planned('fas fa-exclamation-triangle', 'الأخطاء', 'errors') }}
-      {{ tool_planned('fas fa-chart-area', 'النطاق الترددي', 'bandwidth') }}
-      {{ tool_planned('fas fa-file-alt', 'سجل خام', 'raw_log') }}
+      {{ tool_item('/cpanel/metrics/visitors', 'fas fa-users', 'الزوار', 'سجل وصول') }}
+      {{ tool_item('/cpanel/metrics/errors', 'fas fa-exclamation-triangle', 'الأخطاء', 'سجل') }}
+      {{ tool_item('/cpanel/metrics/bandwidth', 'fas fa-chart-area', 'النطاق الترددي', 'حصة') }}
+      {{ tool_item('/cpanel/metrics/raw-log', 'fas fa-file-alt', 'سجل خام', 'عرض') }}
     </div>
   </section>
 
@@ -136,18 +128,18 @@
     <h2 class="jupiter-section-title">الأمان</h2>
     <div class="jupiter-tool-grid">
       {{ tool_item('/cpanel/ssl', 'fas fa-lock', 'SSL/TLS') }}
-      {{ tool_planned('fas fa-terminal', 'SSH', 'ssh') }}
-      {{ tool_planned('fas fa-ban', 'حظر IP', 'ip_blocker') }}
-      {{ tool_planned('fas fa-link', 'Hotlink', 'hotlink') }}
+      {{ tool_item('/cpanel/ssh', 'fas fa-terminal', 'SSH', 'مفتاح') }}
+      {{ tool_item('/cpanel/ip-blocker', 'fas fa-ban', 'حظر IP', 'قائمة') }}
+      {{ tool_item('/cpanel/hotlink', 'fas fa-link', 'Hotlink', 'حماية') }}
     </div>
   </section>
 
   <section class="jupiter-section">
     <h2 class="jupiter-section-title">البرمجيات</h2>
     <div class="jupiter-tool-grid">
-      {{ tool_planned('fas fa-code-branch', 'MultiPHP', 'multiphp') }}
-      {{ tool_planned('fas fa-tachometer-alt', 'تحسين الموقع', 'optimize') }}
-      {{ tool_planned('fas fa-file-code', 'محرر INI', 'ini_editor') }}
+      {{ tool_item('/cpanel/multiphp', 'fas fa-code-branch', 'MultiPHP', 'إصدار PHP') }}
+      {{ tool_item('/cpanel/optimize', 'fas fa-tachometer-alt', 'تحسين الموقع', 'خيارات') }}
+      {{ tool_item('/cpanel/ini-editor', 'fas fa-file-code', 'محرر INI', '.user.ini') }}
     </div>
   </section>
 
@@ -157,7 +149,7 @@
       {{ tool_item('/cpanel/terminal', 'fas fa-terminal', 'Terminal') }}
       {{ tool_item('/cpanel/cron', 'fas fa-clock', 'Cron Jobs') }}
       {{ tool_item('/cpanel/ftp', 'fas fa-exchange-alt', 'FTP') }}
-      {{ tool_planned('fas fa-search', 'تتبع DNS', 'track_dns') }}
+      {{ tool_item('/cpanel/track-dns', 'fas fa-search', 'تتبع DNS', 'استعلام') }}
     </div>
   </section>
 

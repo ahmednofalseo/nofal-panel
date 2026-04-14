@@ -1,0 +1,82 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}محرر المنطقة — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-atlas me-2"></i>محرر المنطقة (DNS)</h2></div>
+{% if not domains %}
+<div class="alert alert-info">أضف نطاقاً أولاً من <a href="/cpanel/domains">النطاقات</a>.</div>
+{% else %}
+<div class="mb-3">
+  <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+    <label class="form-label mb-0 small">النطاق:</label>
+    <select name="domain_id" class="form-select form-select-sm" style="max-width:280px" onchange="this.form.submit()">
+      {% for d in domains %}
+      <option value="{{ d.id }}" {% if selected and d.id == selected.id %}selected{% endif %}>{{ d.domain_name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header">سجل جديد</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/zone-editor/add" class="small">
+          <input type="hidden" name="domain_id" value="{{ selected.id }}">
+          <div class="mb-2">
+            <label class="form-label">النوع</label>
+            <select name="record_type" class="form-select form-select-sm">
+              <option>A</option><option>AAAA</option><option>CNAME</option><option>MX</option><option>TXT</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">الاسم</label>
+            <input name="name" class="form-control form-control-sm" placeholder="@ أو www" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">القيمة</label>
+            <input name="value" class="form-control form-control-sm" required>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">TTL</label>
+              <input type="number" name="ttl" class="form-control form-control-sm" value="3600" min="60">
+            </div>
+            <div class="col-6">
+              <label class="form-label">أولوية MX</label>
+              <input type="number" name="priority" class="form-control form-control-sm" value="0" min="0">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm mt-2">إضافة</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header">سجلات {{ selected.domain_name }}</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>نوع</th><th>اسم</th><th>قيمة</th><th></th></tr></thead>
+          <tbody>
+            {% for rec in records %}
+            <tr>
+              <td>{{ rec.record_type }}</td>
+              <td><code>{{ rec.name }}</code></td>
+              <td><small>{{ rec.value[:80] }}{% if rec.value|length > 80 %}…{% endif %}</small></td>
+              <td>
+                <form method="post" action="/cpanel/zone-editor/delete/{{ rec.id }}" class="m-0" onsubmit="return confirm('حذف السجل؟');">
+                  <button type="submit" class="btn btn-outline-danger btn-sm py-0">حذف</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-muted small px-3 py-2">لا سجلات بعد.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

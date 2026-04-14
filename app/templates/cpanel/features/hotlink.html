@@ -1,0 +1,20 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}Hotlink — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-link me-2"></i>Hotlink Protection</h2></div>
+{% if request.query_params.get('saved') %}<div class="alert alert-success">تم الحفظ.</div>{% endif %}
+<div class="card jupiter-card">
+  <div class="card-body">
+    <form method="post" action="/cpanel/hotlink/save">
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="enabled" value="1" id="hl_en" {% if cfg.enabled %}checked{% endif %}>
+        <label class="form-check-label" for="hl_en">تفعيل الحماية (تفضيلي في اللوحة)</label>
+      </div>
+      <label class="form-label">النطاقات المسموح لها بالإحالة (سطر لكل نطاق)</label>
+      <textarea name="allow_text" class="form-control form-control-sm font-monospace" rows="5">{% for a in cfg.allow %}{{ a }}
+{% endfor %}</textarea>
+      <button type="submit" class="btn btn-primary btn-sm mt-2">حفظ</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

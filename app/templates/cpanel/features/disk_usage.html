@@ -1,0 +1,37 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}استخدام القرص — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-chart-pie me-2"></i>استخدام القرص</h2></div>
+<div class="card jupiter-card mb-3">
+  <div class="card-header jupiter-card-header">حصتك في اللوحة</div>
+  <div class="card-body small">
+    <p class="mb-1">المجلد: <code>{{ home }}</code></p>
+    <p class="text-muted mb-0">مساحة الحساب المسجّلة: {{ user.disk_used_mb }} MB / {% if user.disk_quota_mb > 0 %}{{ user.disk_quota_mb }} MB{% else %}∞{% endif %}</p>
+  </div>
+</div>
+{% if host_total %}
+<div class="card jupiter-card mb-3">
+  <div class="card-header jupiter-card-header">القسم (قرص الخادم)</div>
+  <div class="card-body small">
+    <p>المستخدم: {{ (host_used / 1024 / 1024 / 1024)|round(2) }} GB — المتبقي: {{ (host_free / 1024 / 1024 / 1024)|round(2) }} GB</p>
+  </div>
+</div>
+{% endif %}
+<div class="card jupiter-card">
+  <div class="card-header jupiter-card-header">تقدير حسب المجلدات (du)</div>
+  <div class="card-body">
+    {% if du_rows %}
+    <table class="table table-sm mb-0">
+      <thead><tr><th>مسار</th><th>الحجم</th></tr></thead>
+      <tbody>
+        {% for path, size in du_rows %}
+        <tr><td><code>{{ path }}</code></td><td>{{ size }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted mb-0">لا توجد مجلدات قياسية أو المسار غير موجود على هذا الخادم.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

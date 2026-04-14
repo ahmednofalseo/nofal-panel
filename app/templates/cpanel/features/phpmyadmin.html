@@ -1,0 +1,16 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}phpMyAdmin — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-external-link-alt me-2"></i>phpMyAdmin</h2></div>
+<div class="card jupiter-card">
+  <div class="card-body">
+    {% if pma_url %}
+    <p>افتح phpMyAdmin في نافذة جديدة:</p>
+    <a href="{{ pma_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">{{ pma_url }}</a>
+    {% else %}
+    <p class="text-muted">لم يُضبط رابط phpMyAdmin. أضف في ملف البيئة:</p>
+    <pre class="bg-light p-2 small rounded">PHPMYADMIN_URL=https://your-server/phpmyadmin/</pre>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

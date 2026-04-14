@@ -1,0 +1,26 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}الموجهات — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-share me-2"></i>الموجهات</h2></div>
+<div class="card jupiter-card">
+  <div class="card-body">
+    <p class="small text-muted">توجيه البريد إلى عنوان آخر (يُحدَّث في قاعدة اللوحة ويُستدعى خادم البريد عند التفعيل).</p>
+    {% for e in emails %}
+    <div class="border rounded p-2 mb-2 small">
+      <strong>{{ e.email }}</strong>
+      {% if e.forward_to %}<span class="text-muted">→ {{ e.forward_to }}</span>{% endif %}
+      <form method="post" action="/cpanel/email/{{ e.id }}/forwarder" class="row g-2 mt-2">
+        <div class="col-md-8">
+          <input name="forward_to" class="form-control form-control-sm" placeholder="forward@example.com" value="{{ e.forward_to or '' }}" required>
+        </div>
+        <div class="col-md-4">
+          <button type="submit" class="btn btn-primary btn-sm w-100">حفظ التوجيه</button>
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">لا حسابات بريد. أنشئ من <a href="/cpanel/email">حسابات البريد</a>.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

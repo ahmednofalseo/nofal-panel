@@ -1,0 +1,39 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}تتبع DNS — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-search me-2"></i>تتبع DNS</h2></div>
+<div class="card jupiter-card mb-3">
+  <div class="card-body">
+    <form method="post" action="/cpanel/track-dns" class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label">اسم النطاق أو المضيف</label>
+        <input name="q" class="form-control form-control-sm" value="{{ q or '' }}" placeholder="example.com" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">النوع</label>
+        <select name="rtype" class="form-select form-select-sm">
+          <option value="A" {% if rtype == 'A' %}selected{% endif %}>A</option>
+          <option value="AAAA" {% if rtype == 'AAAA' %}selected{% endif %}>AAAA</option>
+          <option value="MX" {% if rtype == 'MX' %}selected{% endif %}>MX</option>
+          <option value="TXT" {% if rtype == 'TXT' %}selected{% endif %}>TXT</option>
+          <option value="CNAME" {% if rtype == 'CNAME' %}selected{% endif %}>CNAME</option>
+          <option value="NS" {% if rtype == 'NS' %}selected{% endif %}>NS</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary btn-sm w-100">استعلام</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% if result is not none %}
+<div class="card jupiter-card">
+  <div class="card-header jupiter-card-header">النتيجة</div>
+  <ul class="list-group list-group-flush small">
+    {% for line in result %}
+    <li class="list-group-item font-monospace">{{ line }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}عامل السبام — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-shield-alt me-2"></i>عامل السبام</h2></div>
+{% if request.query_params.get('saved') %}<div class="alert alert-success">تم الحفظ.</div>{% endif %}
+<div class="card jupiter-card">
+  <div class="card-body">
+    <p class="small text-muted">إعدادات تفضيلية في اللوحة؛ الربط مع SpamAssassin/Rspamd يتم على مستوى الخادم.</p>
+    <form method="post" action="/cpanel/spam/save" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">مستوى الحساسية</label>
+        <select name="level" class="form-select form-select-sm">
+          <option value="off" {% if cfg.level == 'off' %}selected{% endif %}>معطّل</option>
+          <option value="low" {% if cfg.level == 'low' %}selected{% endif %}>منخفض</option>
+          <option value="medium" {% if cfg.level == 'medium' %}selected{% endif %}>متوسط</option>
+          <option value="high" {% if cfg.level == 'high' %}selected{% endif %}>عالٍ</option>
+        </select>
+      </div>
+      <div class="col-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="block_attachments" value="1" id="sp_att" {% if cfg.block_attachments %}checked{% endif %}>
+          <label class="form-check-label" for="sp_att">تقييد مرفقات خطرة (تفضيلي)</label>
+        </div>
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary btn-sm">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

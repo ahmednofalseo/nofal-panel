@@ -1,0 +1,21 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}نطاقات إضافية — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-sitemap me-2"></i>نطاقات إضافية</h2></div>
+<p><a href="/cpanel/domains" class="btn btn-sm btn-outline-primary">إدارة كل النطاقات</a></p>
+<div class="card jupiter-card">
+  <div class="card-header jupiter-card-header">النطاقات الإضافية المسجّلة</div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>النطاق</th><th>المجلد</th></tr></thead>
+      <tbody>
+        {% for d in addons %}
+        <tr><td>{{ d.domain_name }}</td><td><code>{{ d.document_root or '—' }}</code></td></tr>
+        {% else %}
+        <tr><td colspan="2" class="text-muted small px-3 py-2">لا توجد نطاقات إضافية. أضف من صفحة النطاقات.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

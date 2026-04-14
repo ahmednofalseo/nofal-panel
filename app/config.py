@@ -30,6 +30,13 @@ class Settings:
 
     CERTBOT_EMAIL: str = os.getenv("CERTBOT_EMAIL", "admin@localhost")
 
+    # cPanel tools: optional external phpMyAdmin URL (same host or /phpmyadmin)
+    PHPMYADMIN_URL: str = os.getenv("PHPMYADMIN_URL", "")
+
+    # Optional paths for metrics / raw log (panel host)
+    NGINX_ACCESS_LOG: str = os.getenv("NGINX_ACCESS_LOG", "/var/log/nginx/access.log")
+    NGINX_ERROR_LOG: str = os.getenv("NGINX_ERROR_LOG", "/var/log/nginx/error.log")
+
     PANEL_VERSION: str = "1.0.0"
 
 settings = Settings()

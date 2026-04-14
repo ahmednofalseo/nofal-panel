@@ -7,3 +7,4 @@ from app.models.ftp_account import FtpAccount
 from app.models.cron_job import CronJob
 from app.models.ssl_cert import SSLCert
 from app.models.activity_log import ActivityLog
+from app.models.user_preference import UserPreference

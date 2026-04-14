@@ -62,3 +62,6 @@ class User(Base):
     cron_jobs = relationship("CronJob", back_populates="user", cascade="all, delete-orphan")
     ssl_certs = relationship("SSLCert", back_populates="user", cascade="all, delete-orphan")
     activity_logs = relationship("ActivityLog", back_populates="user", cascade="all, delete-orphan")
+    preferences = relationship(
+        "UserPreference", back_populates="user", cascade="all, delete-orphan"
+    )

@@ -32,7 +32,7 @@ templates = Jinja2Templates(directory="app/templates")
 # ─── Include Routers ─────────────────────────────────────────────────────────
 from app.routers import auth
 from app.routers.admin import accounts, packages, server, dns
-from app.routers.cpanel import dashboard, email, domains, databases, ftp, ssl, cron, files, terminal
+from app.routers.cpanel import dashboard, email, domains, databases, ftp, ssl, cron, files, terminal, features
 from app.routers import status as status_router
 
 app.include_router(auth.router)
@@ -49,6 +49,7 @@ app.include_router(ssl.router)
 app.include_router(cron.router)
 app.include_router(files.router)
 app.include_router(terminal.router)
+app.include_router(features.router)
 app.include_router(status_router.router)
 
 

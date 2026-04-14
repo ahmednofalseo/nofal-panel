@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
@@ -21,4 +22,11 @@ def get_db():
 def init_db():
     # Import package so every model registers on Base.metadata before create_all
     from app import models  # noqa: F401
-    Base.metadata.create_all(bind=engine)
+
+    try:
+        Base.metadata.create_all(bind=engine)
+    except OperationalError as exc:
+        # Multiple uvicorn workers can race on SQLite DDL ("table … already exists").
+        orig = getattr(exc, "orig", exc)
+        if "already exists" not in str(orig).lower():
+            raise

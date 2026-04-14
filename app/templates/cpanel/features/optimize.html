@@ -1,0 +1,26 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}تحسين الموقع — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-tachometer-alt me-2"></i>تحسين الموقع</h2></div>
+{% if request.query_params.get('saved') %}<div class="alert alert-success">تم الحفظ.</div>{% endif %}
+<div class="card jupiter-card">
+  <div class="card-body">
+    <p class="small text-muted">تفضيلات للعرض؛ التطبيق على nginx/cache يدوي أو عبر أتمتة.</p>
+    <form method="post" action="/cpanel/optimize/save">
+      <div class="form-check mb-2">
+        <input class="form-check-input" type="checkbox" name="gzip" value="1" id="ogz" {% if cfg.gzip %}checked{% endif %}>
+        <label class="form-check-label" for="ogz">ضغط Gzip</label>
+      </div>
+      <div class="form-check mb-2">
+        <input class="form-check-input" type="checkbox" name="browser_cache" value="1" id="obc" {% if cfg.browser_cache %}checked{% endif %}>
+        <label class="form-check-label" for="obc">ذاكرة تخزين المتصفح</label>
+      </div>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="minify_static" value="1" id="omin" {% if cfg.minify_static %}checked{% endif %}>
+        <label class="form-check-label" for="omin">تصغير الملفات الثابتة (تجريبي)</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">حفظ</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

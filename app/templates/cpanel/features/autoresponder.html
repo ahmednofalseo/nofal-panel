@@ -1,0 +1,27 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}الرد الآلي — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-reply me-2"></i>الرد الآلي</h2></div>
+<div class="card jupiter-card">
+  <div class="card-body">
+    {% for e in emails %}
+    <div class="border rounded p-3 mb-3 small">
+      <strong>{{ e.email }}</strong>
+      <form method="post" action="/cpanel/email/{{ e.id }}/autoresponder" class="mt-2">
+        <div class="mb-2">
+          <label class="form-label">الموضوع</label>
+          <input name="subject" class="form-control form-control-sm" value="{{ e.autoresponder_subject or 'Out of office' }}" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">النص</label>
+          <textarea name="body" class="form-control form-control-sm" rows="3" required>{{ e.autoresponder_body or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">تفعيل / تحديث الرد الآلي</button>
+      </form>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">لا حسابات بريد.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}Remote MySQL — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-plug me-2"></i>Remote MySQL</h2></div>
+<div class="card jupiter-card mb-3">
+  <div class="card-body">
+    <p class="small text-muted">قائمة العناوين المسموح لها بالاتصال بخادم MySQL (يُطبَّق على الخادم عبر جدار ناري أو صلاحيات MySQL).</p>
+    <form method="post" action="/cpanel/remote-mysql/add" class="row g-2 align-items-end">
+      <div class="col-md-8">
+        <label class="form-label">عنوان IP أو اسم مضيف</label>
+        <input name="host" class="form-control form-control-sm" placeholder="203.0.113.10" required>
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-primary btn-sm w-100">إضافة</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="card jupiter-card">
+  <div class="card-header jupiter-card-header">المسموح</div>
+  <ul class="list-group list-group-flush">
+    {% for h in hosts %}
+    <li class="list-group-item d-flex justify-content-between align-items-center small">
+      <code>{{ h }}</code>
+      <form method="post" action="/cpanel/remote-mysql/remove" class="m-0">
+        <input type="hidden" name="host" value="{{ h }}">
+        <button type="submit" class="btn btn-outline-danger btn-sm">حذف</button>
+      </form>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted small">لا توجد عناوين بعد.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}محرر INI — Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header"><h2><i class="fas fa-file-code me-2"></i>محرر INI / .user.ini</h2></div>
+{% if request.query_params.get('saved') %}<div class="alert alert-success">تم الحفظ في اللوحة.</div>{% endif %}
+<div class="card jupiter-card">
+  <div class="card-body">
+    <p class="small text-muted">مقتطف PHP.ini أو .user.ini — انسخه إلى مجلد الموقع على الخادم أو اربطه بأتمتة النشر.</p>
+    <form method="post" action="/cpanel/ini-editor/save">
+      <textarea name="snippet" class="form-control font-monospace small" rows="16">{{ snippet }}</textarea>
+      <button type="submit" class="btn btn-primary btn-sm mt-2">حفظ</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

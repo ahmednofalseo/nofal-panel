@@ -32,21 +32,38 @@
       <li class="{% if page == 'files' %}active{% endif %}">
         <a href="/cpanel/files"><i class="fas fa-folder-open"></i> File Manager</a>
       </li>
+      <li class="{% if page == 'disk_usage' %}active{% endif %}"><a href="/cpanel/disk-usage"><i class="fas fa-chart-pie"></i> Disk Usage</a></li>
+      <li class="{% if page == 'backup' %}active{% endif %}"><a href="/cpanel/backup"><i class="fas fa-cloud-upload-alt"></i> Backup</a></li>
+      <li class="{% if page == 'git' %}active{% endif %}"><a href="/cpanel/git"><i class="fab fa-git-alt"></i> Git</a></li>
 
       <li class="menu-header">DOMAINS</li>
       <li class="{% if page == 'domains' %}active{% endif %}">
         <a href="/cpanel/domains"><i class="fas fa-globe"></i> Domains</a>
       </li>
+      <li class="{% if page == 'addon_domains' %}active{% endif %}"><a href="/cpanel/addon-domains"><i class="fas fa-sitemap"></i> Addon Domains</a></li>
+      <li class="{% if page == 'redirects' %}active{% endif %}"><a href="/cpanel/redirects"><i class="fas fa-random"></i> Redirects</a></li>
+      <li class="{% if page == 'zone_editor' %}active{% endif %}"><a href="/cpanel/zone-editor"><i class="fas fa-atlas"></i> Zone Editor</a></li>
 
       <li class="menu-header">EMAIL</li>
       <li class="{% if page == 'email' %}active{% endif %}">
         <a href="/cpanel/email"><i class="fas fa-envelope"></i> Email Accounts</a>
       </li>
+      <li class="{% if page == 'forwarders' %}active{% endif %}"><a href="/cpanel/forwarders"><i class="fas fa-share"></i> Forwarders</a></li>
+      <li class="{% if page == 'autoresponder' %}active{% endif %}"><a href="/cpanel/autoresponder"><i class="fas fa-reply"></i> Autoresponder</a></li>
+      <li class="{% if page == 'spam' %}active{% endif %}"><a href="/cpanel/spam"><i class="fas fa-shield-alt"></i> Spam Filter</a></li>
 
       <li class="menu-header">DATABASES</li>
       <li class="{% if page == 'databases' %}active{% endif %}">
         <a href="/cpanel/databases"><i class="fas fa-database"></i> MySQL Databases</a>
       </li>
+      <li class="{% if page == 'phpmyadmin' %}active{% endif %}"><a href="/cpanel/phpmyadmin"><i class="fas fa-external-link-alt"></i> phpMyAdmin</a></li>
+      <li class="{% if page == 'remote_mysql' %}active{% endif %}"><a href="/cpanel/remote-mysql"><i class="fas fa-plug"></i> Remote MySQL</a></li>
+
+      <li class="menu-header">METRICS</li>
+      <li class="{% if page == 'metrics_visitors' %}active{% endif %}"><a href="/cpanel/metrics/visitors"><i class="fas fa-users"></i> Visitors</a></li>
+      <li class="{% if page == 'metrics_errors' %}active{% endif %}"><a href="/cpanel/metrics/errors"><i class="fas fa-exclamation-triangle"></i> Errors</a></li>
+      <li class="{% if page == 'metrics_bandwidth' %}active{% endif %}"><a href="/cpanel/metrics/bandwidth"><i class="fas fa-chart-area"></i> Bandwidth</a></li>
+      <li class="{% if page == 'raw_log' %}active{% endif %}"><a href="/cpanel/metrics/raw-log"><i class="fas fa-file-alt"></i> Raw Access Log</a></li>
 
       <li class="menu-header">TRANSFER</li>
       <li class="{% if page == 'ftp' %}active{% endif %}">
@@ -57,6 +74,14 @@
       <li class="{% if page == 'ssl' %}active{% endif %}">
         <a href="/cpanel/ssl"><i class="fas fa-lock"></i> SSL/TLS</a>
       </li>
+      <li class="{% if page == 'ssh' %}active{% endif %}"><a href="/cpanel/ssh"><i class="fas fa-terminal"></i> SSH Keys</a></li>
+      <li class="{% if page == 'ip_blocker' %}active{% endif %}"><a href="/cpanel/ip-blocker"><i class="fas fa-ban"></i> IP Blocker</a></li>
+      <li class="{% if page == 'hotlink' %}active{% endif %}"><a href="/cpanel/hotlink"><i class="fas fa-link"></i> Hotlink</a></li>
+
+      <li class="menu-header">SOFTWARE</li>
+      <li class="{% if page == 'multiphp' %}active{% endif %}"><a href="/cpanel/multiphp"><i class="fas fa-code-branch"></i> MultiPHP</a></li>
+      <li class="{% if page == 'optimize' %}active{% endif %}"><a href="/cpanel/optimize"><i class="fas fa-tachometer-alt"></i> Optimize</a></li>
+      <li class="{% if page == 'ini_editor' %}active{% endif %}"><a href="/cpanel/ini-editor"><i class="fas fa-file-code"></i> INI Editor</a></li>
 
       <li class="menu-header">ADVANCED</li>
       <li class="{% if page == 'terminal' %}active{% endif %}">
@@ -65,6 +90,7 @@
       <li class="{% if page == 'cron' %}active{% endif %}">
         <a href="/cpanel/cron"><i class="fas fa-clock"></i> Cron Jobs</a>
       </li>
+      <li class="{% if page == 'track_dns' %}active{% endif %}"><a href="/cpanel/track-dns"><i class="fas fa-search"></i> Track DNS</a></li>
 
       <li class="menu-header">ACCOUNT</li>
       <li><a href="/auth/change-password"><i class="fas fa-key"></i> Change Password</a></li>
