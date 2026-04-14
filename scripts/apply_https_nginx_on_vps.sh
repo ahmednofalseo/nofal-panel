@@ -45,6 +45,13 @@ rm -f /etc/nginx/sites-enabled/nofal-panel.conf
 nginx -t
 systemctl reload nginx
 
+# Optional direct HTTPS on 2020/3030 — UFW often allows only 80/443 by default.
+if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
+  ufw status | grep -qE '2020/tcp.*ALLOW' || ufw allow 2020/tcp comment 'nofal-panel-admin' || true
+  ufw status | grep -qE '3030/tcp.*ALLOW' || ufw allow 3030/tcp comment 'nofal-panel-user' || true
+  ufw reload || true
+fi
+
 if [[ -x "$APP_DIR/scripts/deploy.sh" ]]; then
   bash "$APP_DIR/scripts/deploy.sh"
 else
