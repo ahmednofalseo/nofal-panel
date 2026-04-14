@@ -17,6 +17,7 @@ from app.templating import templates
 from app.database import init_db, SessionLocal
 from app.auth import get_password_hash
 from app.security import CSRF_COOKIE_NAME, generate_csrf_token, get_csrf_cookie, get_csrf_header
+from app.helpers.public_url import public_panel_url
 
 def create_app() -> FastAPI:
     """Create an app instance according to settings.APP_MODE."""
@@ -125,11 +126,6 @@ def create_app() -> FastAPI:
 
         return await call_next(request)
 
-    def _public_url(request: Request, port: int) -> str:
-        scheme = (request.headers.get("x-forwarded-proto") or request.url.scheme or "https").split(",")[0].strip()
-        host = (request.headers.get("x-forwarded-host") or request.url.hostname or "").split(",")[0].strip()
-        return f"{scheme}://{host}:{port}"
-
     @app.get("/")
     async def root(request: Request):
         token = request.cookies.get("access_token")
@@ -140,11 +136,11 @@ def create_app() -> FastAPI:
                 role = payload.get("role", "user")
                 if role == "admin":
                     if mode == "user":
-                        return RedirectResponse(url=_public_url(request, settings.ADMIN_PUBLIC_PORT), status_code=302)
+                        return RedirectResponse(url=public_panel_url(request, settings.ADMIN_PUBLIC_PORT), status_code=302)
                     return RedirectResponse(url="/admin/dashboard", status_code=302)
                 # user
                 if mode == "admin":
-                    return RedirectResponse(url=_public_url(request, settings.USER_PUBLIC_PORT), status_code=302)
+                    return RedirectResponse(url=public_panel_url(request, settings.USER_PUBLIC_PORT), status_code=302)
                 return RedirectResponse(url="/cpanel/dashboard", status_code=302)
         return RedirectResponse(url="/auth/login", status_code=302)
 
