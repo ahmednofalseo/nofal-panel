@@ -36,9 +36,11 @@ def create_app() -> FastAPI:
     # Routers
     from app.routers import auth
     from app.routers import status as status_router
+    from app.routers import health as health_router
 
     app.include_router(auth.router)
     app.include_router(status_router.router)
+    app.include_router(health_router.router)
 
     if mode in ("full", "admin"):
         from app.routers.admin import accounts, packages, server, dns, analytics, plugins

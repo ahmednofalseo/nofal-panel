@@ -1,0 +1,17 @@
+[Unit]
+Description=Nofal Panel Celery Worker
+After=network.target redis-server.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/nofal-panel
+EnvironmentFile=-/opt/nofal-panel/.env
+ExecStart=/opt/nofal-panel/venv/bin/celery -A app.jobs.celery_app.celery_app worker -l INFO
+Restart=always
+RestartSec=5
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
+

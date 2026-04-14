@@ -113,6 +113,8 @@ restart_services() {
   step "Restart services"
   systemctl restart nofal-panel-admin 2>/dev/null || true
   systemctl restart nofal-panel-user 2>/dev/null || true
+  systemctl restart nofal-panel-celery-worker 2>/dev/null || true
+  systemctl restart nofal-panel-celery-beat 2>/dev/null || true
   systemctl restart nofal-panel 2>/dev/null || true
   systemctl reload nginx 2>/dev/null || true
   ok "service restart requested"

@@ -1,0 +1,10 @@
+/var/log/nofal-panel/*.log /var/log/nofal-panel/**/*.log {
+  daily
+  rotate 14
+  missingok
+  notifempty
+  compress
+  delaycompress
+  copytruncate
+}
+
