@@ -1,8 +1,124 @@
 {% extends "cpanel/base_cpanel.html" %}
-{% block title %}Domains - Nofal Panel{% endblock %}
+{% block title %}النطاقات — Nofal Panel{% endblock %}
 {% block content %}
-<div class="page-header"><h2><i class="fas fa-circle me-2"></i>Domains</h2></div>
-<div class="card panel-card"><div class="card-body">
-  <p class="text-muted">Module loaded. Full UI is available.</p>
-</div></div>
+<div class="page-header mb-3">
+  <h2 class="h3 jupiter-page-title"><i class="fas fa-globe me-2 text-primary"></i>النطاقات</h2>
+  <p class="text-muted small mb-0">النطاق الرئيسي يُنشأ من WHM عند إنشاء الحساب ويُربط بـ Nginx وDNS على السيرفر. النطاقات الإضافية تضاف هنا.</p>
+</div>
+
+<div class="alert alert-light border mb-4">
+  <h6 class="alert-heading"><i class="fas fa-network-wired me-2"></i>لماذا لا يفتح الدومين من المتصفح؟</h6>
+  <ol class="small mb-0 ps-3">
+    <li><strong>DNS عند المسجّل:</strong> يجب أن يشير <code>A</code> أو <code>NS</code> إلى هذا الخادم. IP المستخدم في اللوحة: <code>{{ server_ip }}</code></li>
+    <li><strong>Nginx:</strong> يجب أن تنجح إنشاء vhost (اللوحة بصلاحيات كتابة على <code>NGINX_SITES_*</code> ثم <code>nginx -t</code>).</li>
+    <li><strong>BIND (اختياري):</strong> إن كان DNS على نفس السيرفر، تأكد من <code>bind9</code> / <code>named</code> ومسار <code>BIND_ZONES_DIR</code>.</li>
+  </ol>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header">نطاق إضافي (Addon)</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/domains/add-addon" class="small">
+          <div class="mb-2">
+            <label class="form-label">اسم النطاق</label>
+            <input name="domain_name" class="form-control form-control-sm" placeholder="example.net" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">إضافة</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header">نطاق فرعي</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/domains/add-subdomain" class="small">
+          <div class="row g-2">
+            <div class="col-5">
+              <label class="form-label">الجزء الفرعي</label>
+              <input name="subdomain" class="form-control form-control-sm" placeholder="shop" required>
+            </div>
+            <div class="col-7">
+              <label class="form-label">النطاق الأم</label>
+              <select name="parent_domain" class="form-select form-select-sm" required>
+                {% for d in domains %}
+                {% if d.domain_type in ['main', 'addon'] %}
+                <option value="{{ d.domain_name }}">{{ d.domain_name }}</option>
+                {% endif %}
+                {% endfor %}
+                {% if user.primary_domain and not domains %}
+                <option value="{{ user.primary_domain }}">{{ user.primary_domain }}</option>
+                {% endif %}
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm mt-2">إضافة</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header">نطاق متوقف (Parked)</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/domains/add-parked" class="small">
+          <input name="domain_name" class="form-control form-control-sm mb-2" placeholder="parked.com" required>
+          <button type="submit" class="btn btn-primary btn-sm">إضافة</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header">إعادة توجيه</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/domains/add-redirect" class="small">
+          <input name="domain_name" class="form-control form-control-sm mb-1" placeholder="from.com" required>
+          <input name="redirect_to" class="form-control form-control-sm mb-1" placeholder="https://target.com" required>
+          <select name="redirect_type" class="form-select form-select-sm mb-2"><option value="301">301</option><option value="302">302</option></select>
+          <button type="submit" class="btn btn-primary btn-sm">حفظ</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card jupiter-card mt-4">
+  <div class="card-header jupiter-card-header">قائمة النطاقات</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0 small">
+        <thead class="table-light"><tr><th>النطاق</th><th>النوع</th><th>المجلد / إعادة التوجيه</th><th></th></tr></thead>
+        <tbody>
+          {% for d in domains %}
+          <tr>
+            <td><strong>{{ d.domain_name }}</strong></td>
+            <td><span class="badge bg-secondary">{{ d.domain_type }}</span></td>
+            <td>
+              {% if d.domain_type == 'redirect' %}
+              → {{ d.redirect_to }}
+              {% else %}
+              <code class="small">{{ d.document_root or '—' }}</code>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if d.domain_type != 'main' %}
+              <form method="post" action="/cpanel/domains/{{ d.id }}/delete" class="d-inline" onsubmit="return confirm('حذف النطاق؟');">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0">حذف</button>
+              </form>
+              {% else %}
+              <span class="text-muted">رئيسي</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted p-4 text-center">لا توجد سجلات نطاقات. أنشئ الحساب من WHM مع دومين صحيح، أو أضف نطاقاً أعلاه.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}

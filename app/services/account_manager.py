@@ -323,7 +323,17 @@ Managed by Nofal Panel v1.0
                 username=username, domain=domain, document_root=public_html,
                 php_version=php_version, upload_size=upload_size
             )
-            results["steps"]["nginx"] = {"status": "ok" if nginx_result["success"] else "error", "msg": nginx_result.get("message", nginx_result.get("error", ""))}
+            results["steps"]["nginx"] = {
+                "status": "ok" if nginx_result["success"] else "error",
+                "msg": nginx_result.get("message", nginx_result.get("error", "")),
+            }
+
+            # Nginx = الموقع على السيرفر (مثل WHM). بدون vhost نجاح الحساب غير مكتمل.
+            if not nginx_result["success"]:
+                results["success"] = False
+                results["error"] = nginx_result.get("error", "Nginx failed — check permissions on NGINX_SITES_* and php-fpm socket")
+                results["account_info"] = {}
+                return results
 
             # ─── Step 4: DNS Zone ─────────────────────────────────────────────
             dns_result = DNSService.create_zone(domain=domain, ip=ip_address)

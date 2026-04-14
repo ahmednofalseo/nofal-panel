@@ -37,8 +37,9 @@
             <input type="text" name="domain" class="form-control" required placeholder="example.com">
           </div>
           <div class="mb-3">
-            <label class="form-label">IP Address</label>
-            <input type="text" name="ip_address" class="form-control" placeholder="Server IP (e.g. 192.168.1.1)" value="127.0.0.1">
+            <label class="form-label">عنوان IP العام للخادم <span class="text-danger">*</span></label>
+            <input type="text" name="ip_address" class="form-control" required placeholder="مثال: 167.86.105.80" value="{{ default_server_ip or '' }}">
+            <small class="text-muted">يُستخدم لسجلات DNS (A) على السيرفر. لا تستخدم 127.0.0.1 على الإنتاج — اضبط <code>PANEL_PUBLIC_IP</code> في .env كقيمة افتراضية.</small>
           </div>
         </div>
       </div>

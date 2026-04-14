@@ -45,6 +45,9 @@ class Settings:
     MAIL_SMTP_PORT: int = int(os.getenv("MAIL_SMTP_PORT", "587"))
     MAIL_SMTP_PORT_SSL: int = int(os.getenv("MAIL_SMTP_PORT_SSL", "465"))
 
+    # WHM / Create Account: default public IP for DNS A records (not 127.0.0.1 in production)
+    PANEL_PUBLIC_IP: str = os.getenv("PANEL_PUBLIC_IP", "").strip()
+
     PANEL_VERSION: str = "1.0.0"
 
 settings = Settings()

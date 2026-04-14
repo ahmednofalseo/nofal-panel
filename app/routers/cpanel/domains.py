@@ -18,13 +18,20 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/domains", response_class=HTMLResponse)
 async def domains_page(request: Request, db: Session = Depends(get_db), user=Depends(get_cpanel_user)):
-    domains = db.query(Domain).filter(Domain.user_id == user.id).all()
+    domains = db.query(Domain).filter(Domain.user_id == user.id).order_by(Domain.domain_name).all()
     main_domain = db.query(Domain).filter(Domain.user_id == user.id, Domain.domain_type == "main").first()
-    return templates.TemplateResponse("cpanel/domains.html", {
-        "request": request, "user": user,
-        "domains": domains, "main_domain": main_domain,
-        "page": "domains"
-    })
+    server_ip = (settings.PANEL_PUBLIC_IP or user.ip_address or "").strip() or "—"
+    return templates.TemplateResponse(
+        "cpanel/domains.html",
+        {
+            "request": request,
+            "user": user,
+            "domains": domains,
+            "main_domain": main_domain,
+            "page": "domains",
+            "server_ip": server_ip,
+        },
+    )
 
 
 @router.post("/domains/add-addon")

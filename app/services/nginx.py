@@ -112,6 +112,14 @@ class NginxService:
     ) -> Dict[str, Any]:
         """Create Nginx virtual host configuration"""
         try:
+            for d in (settings.NGINX_SITES_AVAILABLE, settings.NGINX_SITES_ENABLED):
+                try:
+                    Path(d).mkdir(parents=True, exist_ok=True)
+                except PermissionError as e:
+                    return {
+                        "success": False,
+                        "error": f"Nginx: لا يمكن الكتابة في {d} — شغّل اللوحة بصلاحيات root أو اضبط NGINX_SITES_* في .env — {e}",
+                    }
             # Ensure document root exists
             os.makedirs(document_root, exist_ok=True)
             NginxService._run(f"chown -R {username}:{username} {document_root}")

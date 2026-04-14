@@ -102,8 +102,8 @@ class DNSService:
             DNSService._run(f"chown bind:bind {zone_file}")
             DNSService._run(f"chmod 640 {zone_file}")
 
-            # Reload BIND9
-            reload_result = DNSService._run("systemctl reload bind9")
+            # Reload BIND (اسم الخدمة يختلف: bind9 / named)
+            reload_result = DNSService.reload_bind()
             if reload_result["success"]:
                 return {"success": True, "message": f"DNS zone created for {domain}", "zone_file": zone_file}
             else:
@@ -132,7 +132,7 @@ class DNSService:
                 with open(named_conf, "w") as f:
                     f.write(new_content)
 
-            DNSService._run("systemctl reload bind9")
+            DNSService.reload_bind()
             return {"success": True, "message": f"DNS zone deleted for {domain}"}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -164,7 +164,7 @@ class DNSService:
             with open(zone_file, "w") as f:
                 f.write(content)
 
-            DNSService._run("systemctl reload bind9")
+            DNSService.reload_bind()
             return {"success": True, "message": f"DNS record added: {name} {record_type} {value}"}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -186,7 +186,7 @@ class DNSService:
             with open(zone_file, "w") as f:
                 f.writelines(new_lines)
 
-            DNSService._run("systemctl reload bind9")
+            DNSService.reload_bind()
             return {"success": True, "message": "DNS record deleted"}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -226,5 +226,14 @@ class DNSService:
         return {"valid": result["success"], "output": result.get("output", result.get("error", ""))}
 
     @staticmethod
-    def reload() -> Dict[str, Any]:
+    def reload_bind() -> Dict[str, Any]:
+        """Reload BIND — جرّب bind9 ثم named (CentOS/RHEL)."""
+        for cmd in ("systemctl reload bind9", "systemctl reload named", "service bind9 reload"):
+            r = DNSService._run(cmd)
+            if r["success"]:
+                return r
         return DNSService._run("systemctl reload bind9")
+
+    @staticmethod
+    def reload() -> Dict[str, Any]:
+        return DNSService.reload_bind()

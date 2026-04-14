@@ -11,7 +11,9 @@ from app.database import get_db
 from app.auth import get_admin_user, get_password_hash
 from app.models.user import User
 from app.models.package import Package
+from app.models.domain import Domain
 from app.models.activity_log import ActivityLog
+from app.config import settings
 from app.services.account_manager import AccountManager
 
 router = APIRouter(prefix="/admin", tags=["admin-accounts"])
@@ -29,9 +31,16 @@ async def list_accounts(request: Request, db: Session = Depends(get_db), admin=D
 @router.get("/accounts/create", response_class=HTMLResponse)
 async def create_account_page(request: Request, db: Session = Depends(get_db), admin=Depends(get_admin_user)):
     packages = db.query(Package).filter(Package.is_active == True).all()
-    return templates.TemplateResponse("admin/accounts_create.html", {
-        "request": request, "user": admin, "packages": packages, "page": "accounts"
-    })
+    return templates.TemplateResponse(
+        "admin/accounts_create.html",
+        {
+            "request": request,
+            "user": admin,
+            "packages": packages,
+            "page": "accounts",
+            "default_server_ip": settings.PANEL_PUBLIC_IP or "",
+        },
+    )
 
 
 @router.post("/accounts/create")
@@ -45,7 +54,7 @@ async def create_account(
     first_name: str = Form(""),
     last_name: str = Form(""),
     company: str = Form(""),
-    ip_address: str = Form("127.0.0.1"),
+    ip_address: str = Form(...),
     db: Session = Depends(get_db),
     admin=Depends(get_admin_user)
 ):
@@ -101,6 +110,19 @@ async def create_account(
         username=username, domain=domain, password=password,
         email=email, ip_address=ip_address, package=pkg_dict
     )
+
+    if result["success"]:
+        pub = result.get("account_info", {}).get("public_html") or f"{settings.ACCOUNTS_HOME}/{username}/public_html"
+        main_domain_row = Domain(
+            user_id=new_user.id,
+            domain_name=domain.strip().lower(),
+            domain_type="main",
+            document_root=pub,
+            ip_address=ip_address,
+            config_file=f"{settings.NGINX_SITES_AVAILABLE}/{domain.strip()}.conf",
+            is_active=True,
+        )
+        db.add(main_domain_row)
 
     # Log and save
     log = ActivityLog(
