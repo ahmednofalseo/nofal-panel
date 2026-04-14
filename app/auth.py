@@ -58,9 +58,12 @@ def get_cpanel_user(request: Request, db: Session = Depends(get_db)):
 
     Real admins must use /admin unless they used «Login as user» (JWT claim ghost=true).
     """
+    from app.helpers.public_url import public_panel_path
+
     token = request.cookies.get("access_token")
     payload = decode_token(token) if token else None
     user = get_current_user_from_cookie(request, db)
     if user.role == "admin" and not (payload and payload.get("ghost")):
-        raise HTTPException(status_code=303, headers={"Location": "/admin/dashboard"})
+        loc = public_panel_path(request, settings.ADMIN_PUBLIC_PORT, "/admin/dashboard")
+        raise HTTPException(status_code=303, headers={"Location": loc})
     return user
