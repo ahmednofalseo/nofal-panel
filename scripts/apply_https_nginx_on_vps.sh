@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run on the VPS as root after you can SSH in.
-# Pulls latest main, sets ADMIN_PUBLIC_PORT=443, installs Nginx config, reloads stack.
+# Pulls latest main, sets ADMIN_PUBLIC_PORT=443 + USER_PUBLIC_PORT=443, installs Nginx, reloads stack.
 
 set -euo pipefail
 
@@ -26,6 +26,11 @@ if [[ -f "$ENV_FILE" ]]; then
   else
     printf '\nADMIN_PUBLIC_PORT=443\n' >> "$ENV_FILE"
   fi
+  if grep -q '^USER_PUBLIC_PORT=' "$ENV_FILE"; then
+    sed -i.bak 's/^USER_PUBLIC_PORT=.*/USER_PUBLIC_PORT=443/' "$ENV_FILE"
+  else
+    printf 'USER_PUBLIC_PORT=443\n' >> "$ENV_FILE"
+  fi
 else
   die "Missing $ENV_FILE — copy from .env.example and configure first"
 fi
@@ -47,4 +52,4 @@ else
   systemctl restart nofal-panel-user 2>/dev/null || true
 fi
 
-echo "[OK] HTTPS 443 → admin; ADMIN_PUBLIC_PORT=443. Test: curl -k -sI https://127.0.0.1/"
+echo "[OK] HTTPS 443: / → admin, /cpanel → user; ports 443 in .env. Test: curl -k -sI https://127.0.0.1/cpanel/dashboard"
