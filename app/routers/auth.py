@@ -8,6 +8,7 @@ from app.config import settings
 from app.auth import verify_password, create_access_token, get_password_hash
 from app.models.user import User
 from app.models.activity_log import ActivityLog
+from app.security import rate_limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -42,8 +43,17 @@ async def login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.username == username).first()
+    # Rate limit login attempts per IP to slow brute-force.
     client_ip = request.client.host
+    rl = rate_limiter.check(f"login:{client_ip}", limit=10, window_s=60)
+    if not rl.allowed:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": f"Too many attempts. Try again in {rl.reset_in_s}s"},
+            status_code=429,
+        )
+
+    user = db.query(User).filter(User.username == username).first()
 
     if not user or not verify_password(password, user.hashed_password):
         log = ActivityLog(action="LOGIN_FAILED", description=f"Failed login attempt for '{username}'",

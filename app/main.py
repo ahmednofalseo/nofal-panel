@@ -16,6 +16,7 @@ from app.paths import STATIC_DIR
 from app.templating import templates
 from app.database import init_db, SessionLocal
 from app.auth import get_password_hash
+from app.security import CSRF_COOKIE_NAME, generate_csrf_token, get_csrf_cookie, get_csrf_header
 
 def create_app() -> FastAPI:
     """Create an app instance according to settings.APP_MODE."""
@@ -68,6 +69,44 @@ def create_app() -> FastAPI:
                 "هذا الجهاز ليس Linux. أوامر WHM الحقيقية (systemctl، UFW، BIND، …) "
                 "تعمل على Ubuntu/Debian على الخادم. الواجهة تعرض البيانات المحلية المتاحة فقط."
             )
+        response = await call_next(request)
+
+        # Ensure CSRF cookie exists for browser sessions.
+        if not request.cookies.get(CSRF_COOKIE_NAME):
+            response.set_cookie(
+                key=CSRF_COOKIE_NAME,
+                value=generate_csrf_token(),
+                httponly=False,
+                samesite="lax",
+                secure=False,  # set True when serving HTTPS end-to-end
+                max_age=60 * 60 * 24 * 7,
+            )
+        return response
+
+    @app.middleware("http")
+    async def csrf_protect_middleware(request: Request, call_next):
+        # Protect state-changing requests for browser UI.
+        if request.method.upper() in ("POST", "PUT", "PATCH", "DELETE"):
+            cookie_token = get_csrf_cookie(request)
+            header_token = get_csrf_header(request)
+
+            form_token = None
+            try:
+                # Read body safely for form parsing without breaking handlers.
+                body = await request.body()
+                request._body = body  # type: ignore[attr-defined]
+                if request.headers.get("content-type", "").startswith("application/x-www-form-urlencoded") or "multipart/form-data" in request.headers.get("content-type", ""):
+                    form = await request.form()
+                    form_token = form.get("csrf_token") if form else None
+                request._body = body  # type: ignore[attr-defined]
+            except Exception:
+                # If parsing fails, rely on header token.
+                pass
+
+            provided = header_token or form_token
+            if not cookie_token or not provided or provided != cookie_token:
+                return templates.TemplateResponse("errors/403.html", {"request": request}, status_code=403)
+
         return await call_next(request)
 
     def _public_url(request: Request, port: int) -> str:
