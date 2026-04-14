@@ -53,4 +53,14 @@ def get_admin_user(request: Request, db: Session = Depends(get_db)):
     return user
 
 def get_cpanel_user(request: Request, db: Session = Depends(get_db)):
-    return get_current_user_from_cookie(request, db)
+    """
+    cPanel routes are for hosting users only.
+
+    Real admins must use /admin unless they used «Login as user» (JWT claim ghost=true).
+    """
+    token = request.cookies.get("access_token")
+    payload = decode_token(token) if token else None
+    user = get_current_user_from_cookie(request, db)
+    if user.role == "admin" and not (payload and payload.get("ghost")):
+        raise HTTPException(status_code=303, headers={"Location": "/admin/dashboard"})
+    return user
