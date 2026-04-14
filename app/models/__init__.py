@@ -9,3 +9,4 @@ from app.models.ssl_cert import SSLCert
 from app.models.activity_log import ActivityLog
 from app.models.user_preference import UserPreference
 from app.models.port_registry import PortRegistry
+from app.models.plugin import Plugin

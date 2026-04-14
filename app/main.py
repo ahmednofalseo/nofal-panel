@@ -41,12 +41,25 @@ def create_app() -> FastAPI:
     app.include_router(status_router.router)
 
     if mode in ("full", "admin"):
-        from app.routers.admin import accounts, packages, server, dns, analytics
+        from app.routers.admin import accounts, packages, server, dns, analytics, plugins
         app.include_router(accounts.router)
         app.include_router(packages.router)
         app.include_router(server.router)
         app.include_router(dns.router)
         app.include_router(analytics.router)
+        app.include_router(plugins.router)
+
+        # Plugin routes (enabled only). Safe to no-op if DB not ready.
+        try:
+            from pathlib import Path
+            from app.services.plugins import PluginManager
+
+            plugins_dir = Path(__file__).resolve().parents[1] / "plugins"
+            pm = PluginManager(plugins_dir=plugins_dir)
+            with SessionLocal() as db:
+                pm.mount_enabled(app, db)
+        except Exception:
+            pass
 
     if mode in ("full", "user"):
         from app.routers.cpanel import dashboard, email, domains, databases, ftp, ssl, cron, files, terminal, features

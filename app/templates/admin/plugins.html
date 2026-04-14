@@ -1,0 +1,50 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Plugins - Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-puzzle-piece me-2"></i>Plugins</h2>
+  <span class="text-muted">Enable/disable optional modules (mounted under <code>/plugins/&lt;name&gt;</code>)</span>
+</div>
+
+<div class="card panel-card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Version</th>
+            <th>Status</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in plugins %}
+          <tr>
+            <td><strong>{{ p.name }}</strong></td>
+            <td><code>{{ p.version }}</code></td>
+            <td>
+              {% if p.enabled %}
+                <span class="badge bg-success">Enabled</span>
+              {% else %}
+                <span class="badge bg-secondary">Disabled</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <form method="post" action="/admin/plugins/{{ p.id }}/toggle" class="d-inline">
+                <button class="btn btn-sm {% if p.enabled %}btn-outline-danger{% else %}btn-outline-success{% endif %}" type="submit">
+                  {% if p.enabled %}Disable{% else %}Enable{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted text-center py-4">No plugins found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
