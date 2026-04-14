@@ -4,9 +4,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
 
+_db_url = settings.DATABASE_URL
+_is_sqlite = _db_url.startswith("sqlite")
+
 engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
+    _db_url,
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
+    pool_pre_ping=not _is_sqlite,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
