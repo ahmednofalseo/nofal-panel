@@ -1,0 +1,198 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}cPanel — {{ user.primary_domain or user.username }}{% endblock %}
+{% block content %}
+<div class="jupiter-dashboard">
+  <div class="row g-3 mb-2">
+    <div class="col-lg-8">
+      <h1 class="h3 jupiter-page-title mb-1"><i class="fas fa-th-large me-2 text-primary"></i>لوحة التحكم</h1>
+      <p class="text-muted small mb-0">واجهة مستوحاة من cPanel Jupiter — اختصارات للأدوات المتاحة</p>
+    </div>
+    <div class="col-lg-4 text-lg-end">
+      <a href="/status" class="btn btn-sm btn-outline-secondary"><i class="fas fa-list-check me-1"></i>حالة الصفحات</a>
+    </div>
+  </div>
+
+  <div class="row g-3 align-items-stretch">
+    <!-- General + Statistics (Jupiter-style columns) -->
+    <div class="col-xl-4">
+      <div class="card jupiter-card h-100 mb-0">
+        <div class="card-header jupiter-card-header"><i class="fas fa-user-circle me-2"></i>معلومات عامة</div>
+        <div class="card-body small">
+          <table class="table table-sm table-borderless mb-0">
+            <tr><td class="text-muted">المستخدم</td><td><strong>{{ user.username }}</strong></td></tr>
+            <tr><td class="text-muted">النطاق الأساسي</td><td>{{ user.primary_domain or '—' }}</td></tr>
+            <tr><td class="text-muted">المجلد الرئيسي</td><td><code>/home/{{ user.username }}</code></td></tr>
+            <tr><td class="text-muted">البريد</td><td>{{ user.email }}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-8">
+      <div class="card jupiter-card h-100 mb-0">
+        <div class="card-header jupiter-card-header"><i class="fas fa-chart-bar me-2"></i>الإحصائيات</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="jupiter-meter-label d-flex justify-content-between"><span>مساحة القرص</span><span>{{ disk_percent }}%</span></div>
+              <div class="progress jupiter-progress mb-1">
+                <div class="progress-bar bg-warning" style="width:{{ disk_percent }}%"></div>
+              </div>
+              <small class="text-muted">{{ user.disk_used_mb }} MB / {% if user.disk_quota_mb > 0 %}{{ user.disk_quota_mb }} MB{% else %}∞{% endif %}</small>
+            </div>
+            <div class="col-md-6">
+              <div class="jupiter-meter-label d-flex justify-content-between"><span>النطاق الترددي</span><span>{{ bw_percent }}%</span></div>
+              <div class="progress jupiter-progress mb-1">
+                <div class="progress-bar bg-info" style="width:{{ bw_percent }}%"></div>
+              </div>
+              <small class="text-muted">{{ user.bandwidth_used_mb }} MB / {% if user.bandwidth_limit_mb > 0 %}{{ user.bandwidth_limit_mb }} MB{% else %}∞{% endif %}</small>
+            </div>
+            <div class="col-md-6">
+              <div class="jupiter-meter-label d-flex justify-content-between"><span>تحميل الخادم (CPU)</span><span>{{ cpu_host_pct }}%</span></div>
+              <div class="progress jupiter-progress mb-1">
+                <div class="progress-bar bg-primary" style="width:{{ [100, cpu_host_pct|int]|min }}%"></div>
+              </div>
+              <small class="text-muted">لقطة من الخادم — ليس حداً على حسابك فقط</small>
+            </div>
+            <div class="col-md-6">
+              <div class="jupiter-meter-label d-flex justify-content-between"><span>الذاكرة (RAM)</span><span>{{ ram_host_pct }}%</span></div>
+              <div class="progress jupiter-progress mb-1">
+                <div class="progress-bar bg-success" style="width:{{ [100, ram_host_pct|int]|min }}%"></div>
+              </div>
+              <small class="text-muted">عرض عام للخادم</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool sections (icon grid) -->
+  {% macro tool_item(href, icon, title, subtitle='') %}
+  <a href="{{ href }}" class="jupiter-tool-item" title="{{ title }}">
+    <span class="jupiter-tool-icon"><i class="{{ icon }}"></i></span>
+    <span class="jupiter-tool-title">{{ title }}</span>
+    {% if subtitle %}<span class="jupiter-tool-sub">{{ subtitle }}</span>{% endif %}
+  </a>
+  {% endmacro %}
+
+  {% macro tool_planned(icon, title_ar, key) %}
+  <a href="/cpanel/feature-unavailable?key={{ key }}" class="jupiter-tool-item jupiter-tool-soon">
+    <span class="jupiter-tool-icon"><i class="{{ icon }}"></i></span>
+    <span class="jupiter-tool-title">{{ title_ar }}</span>
+    <span class="jupiter-tool-sub">قريباً</span>
+  </a>
+  {% endmacro %}
+
+  <section class="jupiter-section mt-4">
+    <h2 class="jupiter-section-title">الملفات</h2>
+    <div class="jupiter-tool-grid">
+      {{ tool_item('/cpanel/files', 'fas fa-folder-open', 'مدير الملفات') }}
+      {{ tool_planned('fas fa-chart-pie', 'استخدام القرص', 'disk_usage') }}
+      {{ tool_planned('fas fa-cloud-upload-alt', 'النسخ الاحتياطي', 'backup') }}
+      {{ tool_planned('fab fa-git-alt', 'Git™', 'git') }}
+    </div>
+  </section>
+
+  <section class="jupiter-section">
+    <h2 class="jupiter-section-title">قواعد البيانات</h2>
+    <div class="jupiter-tool-grid">
+      {{ tool_item('/cpanel/databases', 'fas fa-database', 'MySQL® Databases') }}
+      {{ tool_planned('fas fa-external-link-alt', 'phpMyAdmin', 'phpmyadmin') }}
+      {{ tool_planned('fas fa-plug', 'Remote MySQL', 'remote_mysql') }}
+    </div>
+  </section>
+
+  <section class="jupiter-section">
+    <h2 class="jupiter-section-title">النطاقات</h2>
+    <div class="jupiter-tool-grid">
+      {{ tool_item('/cpanel/domains', 'fas fa-globe', 'النطاقات') }}
+      {{ tool_planned('fas fa-sitemap', 'نطاقات إضافية', 'addon_domains') }}
+      {{ tool_planned('fas fa-random', 'إعادة التوجيه', 'redirects') }}
+      {{ tool_planned('fas fa-atlas', 'محرر المنطقة', 'zone_editor') }}
+    </div>
+  </section>
+
+  <section class="jupiter-section">
+    <h2 class="jupiter-section-title">البريد</h2>
+    <div class="jupiter-tool-grid">
+      {{ tool_item('/cpanel/email', 'fas fa-envelope', 'حسابات البريد') }}
+      {{ tool_planned('fas fa-share', 'الموجهات', 'forwarders') }}
+      {{ tool_planned('fas fa-reply', 'الرد الآلي', 'autoresponder') }}
+      {{ tool_planned('fas fa-shield-alt', 'عامل السبام', 'spam') }}
+    </div>
+  </section>
+
+  <section class="jupiter-section">
+    <h2 class="jupiter-section-title">المقاييس</h2>
+    <div class="jupiter-tool-grid">
+      {{ tool_planned('fas fa-users', 'الزوار', 'visitors') }}
+      {{ tool_planned('fas fa-exclamation-triangle', 'الأخطاء', 'errors') }}
+      {{ tool_planned('fas fa-chart-area', 'النطاق الترددي', 'bandwidth') }}
+      {{ tool_planned('fas fa-file-alt', 'سجل خام', 'raw_log') }}
+    </div>
+  </section>
+
+  <section class="jupiter-section">
+    <h2 class="jupiter-section-title">الأمان</h2>
+    <div class="jupiter-tool-grid">
+      {{ tool_item('/cpanel/ssl', 'fas fa-lock', 'SSL/TLS') }}
+      {{ tool_planned('fas fa-terminal', 'SSH', 'ssh') }}
+      {{ tool_planned('fas fa-ban', 'حظر IP', 'ip_blocker') }}
+      {{ tool_planned('fas fa-link', 'Hotlink', 'hotlink') }}
+    </div>
+  </section>
+
+  <section class="jupiter-section">
+    <h2 class="jupiter-section-title">البرمجيات</h2>
+    <div class="jupiter-tool-grid">
+      {{ tool_planned('fas fa-code-branch', 'MultiPHP', 'multiphp') }}
+      {{ tool_planned('fas fa-tachometer-alt', 'تحسين الموقع', 'optimize') }}
+      {{ tool_planned('fas fa-file-code', 'محرر INI', 'ini_editor') }}
+    </div>
+  </section>
+
+  <section class="jupiter-section">
+    <h2 class="jupiter-section-title">متقدم</h2>
+    <div class="jupiter-tool-grid">
+      {{ tool_item('/cpanel/terminal', 'fas fa-terminal', 'Terminal') }}
+      {{ tool_item('/cpanel/cron', 'fas fa-clock', 'Cron Jobs') }}
+      {{ tool_item('/cpanel/ftp', 'fas fa-exchange-alt', 'FTP') }}
+      {{ tool_planned('fas fa-search', 'تتبع DNS', 'track_dns') }}
+    </div>
+  </section>
+
+  <section class="jupiter-section mb-2">
+    <h2 class="jupiter-section-title">الملخص السريع</h2>
+    <div class="row g-2">
+      <div class="col-6 col-md-3">
+        <a href="/cpanel/domains" class="cpanel-widget text-decoration-none">
+          <i class="fas fa-globe"></i>
+          <span class="count">{{ domains_count }}</span>
+          <span class="label">نطاقات</span>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a href="/cpanel/email" class="cpanel-widget text-decoration-none">
+          <i class="fas fa-envelope"></i>
+          <span class="count">{{ email_count }}</span>
+          <span class="label">بريد</span>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a href="/cpanel/databases" class="cpanel-widget text-decoration-none">
+          <i class="fas fa-database"></i>
+          <span class="count">{{ db_count }}</span>
+          <span class="label">قواعد بيانات</span>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a href="/cpanel/ftp" class="cpanel-widget text-decoration-none">
+          <i class="fas fa-exchange-alt"></i>
+          <span class="count">{{ ftp_count }}</span>
+          <span class="label">FTP</span>
+        </a>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

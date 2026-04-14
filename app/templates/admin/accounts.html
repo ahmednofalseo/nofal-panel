@@ -1,0 +1,112 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Accounts - Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h2><i class="fas fa-users me-2"></i>Hosting Accounts</h2>
+    <span class="text-muted">Manage all cPanel accounts</span>
+  </div>
+  <a href="/admin/accounts/create" class="btn btn-success"><i class="fas fa-plus me-2"></i>Create Account</a>
+</div>
+
+<div class="card panel-card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover" id="accountsTable">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Primary Domain</th>
+            <th>Package</th>
+            <th>Disk</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for acc in accounts %}
+        <tr class="{% if acc.is_suspended %}table-warning{% endif %}">
+          <td><strong>{{ acc.username }}</strong><br><small class="text-muted">{{ acc.ip_address }}</small></td>
+          <td><small>{{ acc.email }}</small></td>
+          <td>
+            <a href="http://{{ acc.primary_domain }}" target="_blank" class="text-decoration-none">
+              <i class="fas fa-external-link-alt me-1 text-muted" style="font-size:10px"></i>{{ acc.primary_domain }}
+            </a>
+          </td>
+          <td><span class="badge bg-secondary">{{ acc.package.name if acc.package else 'Default' }}</span></td>
+          <td>
+            <div class="progress" style="width:80px; height:6px; display:inline-block; vertical-align:middle">
+              <div class="progress-bar" style="width:{% if acc.disk_quota_mb > 0 %}{{ [100, ((acc.disk_used_mb / acc.disk_quota_mb) * 100)|int]|min }}{% else %}0{% endif %}%"></div>
+            </div>
+            <small class="ms-1">{{ acc.disk_used_mb }}MB</small>
+          </td>
+          <td>
+            {% if acc.is_suspended %}
+            <span class="badge bg-danger">Suspended</span>
+            {% elif acc.is_active %}
+            <span class="badge bg-success">Active</span>
+            {% else %}
+            <span class="badge bg-secondary">Inactive</span>
+            {% endif %}
+          </td>
+          <td><small>{{ acc.created_at.strftime('%Y-%m-%d') if acc.created_at else '-' }}</small></td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              <a href="/admin/accounts/{{ acc.id }}/login-as" class="btn btn-outline-info" title="Login as user"><i class="fas fa-sign-in-alt"></i></a>
+              <a href="/admin/accounts/{{ acc.id }}/edit" class="btn btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></a>
+              {% if acc.is_suspended %}
+              <form method="POST" action="/admin/accounts/{{ acc.id }}/unsuspend" class="d-inline">
+                <button class="btn btn-outline-success" title="Unsuspend"><i class="fas fa-play"></i></button>
+              </form>
+              {% else %}
+              <button class="btn btn-outline-warning" title="Suspend" onclick="showSuspendModal({{ acc.id }})"><i class="fas fa-pause"></i></button>
+              {% endif %}
+              <form method="POST" action="/admin/accounts/{{ acc.id }}/terminate" class="d-inline" onsubmit="return confirm('⚠️ TERMINATE account {{ acc.username }}? This will delete all data and cannot be undone!')">
+                <button class="btn btn-outline-danger" title="Terminate"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not accounts %}
+        <tr><td colspan="8" class="text-center py-4 text-muted">
+          <i class="fas fa-users fa-2x mb-2 d-block"></i>No accounts found. <a href="/admin/accounts/create">Create the first account</a>
+        </td></tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Suspend Modal -->
+<div class="modal fade" id="suspendModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Suspend Account</h5></div>
+      <form method="POST" id="suspendForm">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Suspension Reason</label>
+            <textarea name="reason" class="form-control" rows="3" placeholder="Reason for suspension..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning">Suspend Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function showSuspendModal(userId) {
+  document.getElementById('suspendForm').action = `/admin/accounts/${userId}/suspend`;
+  new bootstrap.Modal(document.getElementById('suspendModal')).show();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block body_class %}cpanel jupiter-theme{% endblock %}
+{% block body %}
+<div class="wrapper">
+  <!-- cPanel Sidebar -->
+  <nav id="sidebar" class="sidebar cpanel-sidebar jupiter-sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <i class="fas fa-server"></i>
+        <span>Nofal Panel</span>
+      </div>
+      <div class="admin-badge cpanel-badge">cPanel</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar"><i class="fas fa-user"></i></div>
+      <div class="user-info">
+        <strong>{{ user.username }}</strong>
+        <small>{{ user.primary_domain }}</small>
+      </div>
+    </div>
+    <div class="sidebar-search px-3 pb-2">
+      <label for="cpanelSearch" class="visually-hidden">بحث في القائمة</label>
+      <input type="search" id="cpanelSearch" class="form-control form-control-sm jupiter-sidebar-search" placeholder="بحث في الوظائف…" autocomplete="off">
+    </div>
+    <ul class="sidebar-menu" id="cpanelSidebarMenu">
+      <li class="menu-header">MAIN</li>
+      <li class="{% if page == 'dashboard' %}active{% endif %}">
+        <a href="/cpanel/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      </li>
+
+      <li class="menu-header">FILES</li>
+      <li class="{% if page == 'files' %}active{% endif %}">
+        <a href="/cpanel/files"><i class="fas fa-folder-open"></i> File Manager</a>
+      </li>
+
+      <li class="menu-header">DOMAINS</li>
+      <li class="{% if page == 'domains' %}active{% endif %}">
+        <a href="/cpanel/domains"><i class="fas fa-globe"></i> Domains</a>
+      </li>
+
+      <li class="menu-header">EMAIL</li>
+      <li class="{% if page == 'email' %}active{% endif %}">
+        <a href="/cpanel/email"><i class="fas fa-envelope"></i> Email Accounts</a>
+      </li>
+
+      <li class="menu-header">DATABASES</li>
+      <li class="{% if page == 'databases' %}active{% endif %}">
+        <a href="/cpanel/databases"><i class="fas fa-database"></i> MySQL Databases</a>
+      </li>
+
+      <li class="menu-header">TRANSFER</li>
+      <li class="{% if page == 'ftp' %}active{% endif %}">
+        <a href="/cpanel/ftp"><i class="fas fa-exchange-alt"></i> FTP Accounts</a>
+      </li>
+
+      <li class="menu-header">SECURITY</li>
+      <li class="{% if page == 'ssl' %}active{% endif %}">
+        <a href="/cpanel/ssl"><i class="fas fa-lock"></i> SSL/TLS</a>
+      </li>
+
+      <li class="menu-header">ADVANCED</li>
+      <li class="{% if page == 'terminal' %}active{% endif %}">
+        <a href="/cpanel/terminal"><i class="fas fa-terminal"></i> Terminal</a>
+      </li>
+      <li class="{% if page == 'cron' %}active{% endif %}">
+        <a href="/cpanel/cron"><i class="fas fa-clock"></i> Cron Jobs</a>
+      </li>
+
+      <li class="menu-header">ACCOUNT</li>
+      <li><a href="/auth/change-password"><i class="fas fa-key"></i> Change Password</a></li>
+      <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <nav class="top-navbar">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+      <div class="navbar-center d-none d-md-block">
+        <small class="text-muted"><i class="fas fa-globe me-1"></i>{{ user.primary_domain }}</small>
+      </div>
+      <div class="navbar-right d-flex align-items-center gap-2">
+        <span class="server-time small text-muted d-none d-sm-inline" id="serverTime"></span>
+        <a href="/status" class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex align-items-center" title="حالة الصفحات"><i class="fas fa-list-check"></i></a>
+        <div class="dropdown">
+          <button class="btn btn-sm dropdown-toggle admin-menu-btn" data-bs-toggle="dropdown">
+            <i class="fas fa-user me-1"></i>{{ user.username }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="/status"><i class="fas fa-list-check me-2"></i>حالة النظام</a></li>
+            <li><a class="dropdown-item" href="/auth/change-password"><i class="fas fa-key me-2"></i>Change Password</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="/auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    {% if request.state.whm_runtime_notice %}
+    <div class="alert alert-warning alert-dismissible fade show m-3 mb-0" role="alert">
+      <i class="fas fa-info-circle me-2"></i>{{ request.state.whm_runtime_notice }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {% set params = request.query_params %}
+    {% if params.get('success') %}
+    <div class="alert alert-success alert-dismissible fade show m-3">
+      <i class="fas fa-check-circle me-2"></i>{{ params.get('success').replace('+', ' ') }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    {% if params.get('error') %}
+    <div class="alert alert-danger alert-dismissible fade show m-3">
+      <i class="fas fa-exclamation-circle me-2"></i>{{ params.get('error').replace('+', ' ') }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <div class="content-wrapper">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

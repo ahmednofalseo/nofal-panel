@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block body_class %}admin-panel{% endblock %}
+{% block body %}
+<div class="wrapper">
+  <!-- Sidebar -->
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <i class="fas fa-server"></i>
+        <span>Nofal Panel</span>
+      </div>
+      <div class="admin-badge">WHM</div>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-avatar"><i class="fas fa-user-shield"></i></div>
+      <div class="user-info">
+        <strong>{{ user.username }}</strong>
+        <small>Administrator</small>
+      </div>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="menu-header">HOME</li>
+      <li class="{% if page == 'dashboard' %}active{% endif %}">
+        <a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Home</a>
+      </li>
+
+      <li class="menu-header">ACCOUNT INFORMATION</li>
+      <li class="{% if page == 'accounts' %}active{% endif %}">
+        <a href="/admin/accounts"><i class="fas fa-users"></i> Accounts</a>
+      </li>
+      <li class="{% if page == 'packages' %}active{% endif %}">
+        <a href="/admin/packages"><i class="fas fa-box"></i> Packages</a>
+      </li>
+
+      <li class="menu-header">SERVER CONFIGURATION</li>
+      <li class="{% if page == 'monitor' %}active{% endif %}">
+        <a href="/admin/server/monitor"><i class="fas fa-chart-line"></i> Monitor</a>
+      </li>
+      <li class="{% if page == 'services' %}active{% endif %}">
+        <a href="/admin/server/services"><i class="fas fa-cogs"></i> Services</a>
+      </li>
+      <li class="{% if page == 'dns' %}active{% endif %}">
+        <a href="/admin/dns"><i class="fas fa-network-wired"></i> DNS Manager</a>
+      </li>
+      <li class="{% if page == 'firewall' %}active{% endif %}">
+        <a href="/admin/server/firewall"><i class="fas fa-shield-alt"></i> Firewall</a>
+      </li>
+      <li class="{% if page == 'processes' %}active{% endif %}">
+        <a href="/admin/server/processes"><i class="fas fa-microchip"></i> Processes</a>
+      </li>
+
+      <li class="menu-header">SERVER STATUS / LOGS</li>
+      <li class="{% if page == 'logs' %}active{% endif %}">
+        <a href="/admin/server/logs"><i class="fas fa-file-alt"></i> Server Logs</a>
+      </li>
+      <li class="{% if page == 'activity_logs' %}active{% endif %}">
+        <a href="/admin/logs/activity"><i class="fas fa-history"></i> Activity Log</a>
+      </li>
+      <li class="{% if page == 'server_info' %}active{% endif %}">
+        <a href="/admin/server/info"><i class="fas fa-info-circle"></i> Server Info</a>
+      </li>
+
+      <li class="menu-header">ACCOUNT</li>
+      <li><a href="/auth/change-password"><i class="fas fa-key"></i> Change Password</a></li>
+      <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Top Navbar -->
+    <nav class="top-navbar">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+      <div class="navbar-right">
+        <span class="server-time" id="serverTime"></span>
+        <div class="dropdown">
+          <button class="btn btn-sm dropdown-toggle admin-menu-btn" data-bs-toggle="dropdown">
+            <i class="fas fa-user-shield me-1"></i>{{ user.username }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="/status"><i class="fas fa-list-check me-2"></i>حالة النظام</a></li>
+            <li><a class="dropdown-item" href="/auth/change-password"><i class="fas fa-key me-2"></i>Change Password</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="/auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    {% if request.state.whm_runtime_notice %}
+    <div class="alert alert-warning alert-dismissible fade show m-3 mb-0" role="alert">
+      <i class="fas fa-info-circle me-2"></i>{{ request.state.whm_runtime_notice }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <!-- Alerts -->
+    {% set params = request.query_params %}
+    {% if params.get('success') %}
+    <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
+      <i class="fas fa-check-circle me-2"></i>{{ params.get('success').replace('+', ' ') }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    {% if params.get('error') %}
+    <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+      <i class="fas fa-exclamation-circle me-2"></i>{{ params.get('error').replace('+', ' ') }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <!-- Page Content -->
+    <div class="content-wrapper">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

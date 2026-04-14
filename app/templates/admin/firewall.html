@@ -1,0 +1,54 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Firewall - Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-shield-alt me-2"></i>Firewall configuration</h2>
+  <span class="text-muted">UFW-style rules (WHM » Security Center » Firewall)</span>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card panel-card">
+      <div class="card-header"><strong>Add port</strong></div>
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col-4"><label class="form-label small">Port</label><input type="number" class="form-control" id="fwPort" value="2083" min="1" max="65535"></div>
+          <div class="col-4"><label class="form-label small">Protocol</label><select class="form-select" id="fwProto"><option>tcp</option><option>udp</option></select></div>
+          <div class="col-4"><label class="form-label small">Action</label><select class="form-select" id="fwAct"><option value="allow">allow</option><option value="deny">deny</option></select></div>
+        </div>
+        <button type="button" class="btn btn-primary mt-3" onclick="addFwRule()"><i class="fas fa-plus me-1"></i>Apply rule</button>
+        <p class="small text-muted mt-2 mb-0">Requires root + UFW on Linux server.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card panel-card">
+      <div class="card-header"><strong>Current rules</strong></div>
+      <div class="card-body">
+        {% if rules %}
+        <ul class="list-group list-group-flush">
+          {% for r in rules %}
+          <li class="list-group-item font-monospace small">{{ r.rule }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">No numbered rules returned (UFW inactive or empty).</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function addFwRule() {
+  const body = new URLSearchParams();
+  body.set('port', document.getElementById('fwPort').value);
+  body.set('protocol', document.getElementById('fwProto').value);
+  body.set('action', document.getElementById('fwAct').value);
+  fetch('/admin/server/firewall/add', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
+    .then(r => r.json())
+    .then(d => { if (d.success) location.reload(); else alert(d.stderr || d.error || 'Failed'); });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حالة النظام — Nofal Panel</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="/static/css/style.css" rel="stylesheet">
+  <style>
+    .status-live { color: #198754; }
+    .status-partial { color: #fd7e14; }
+    .status-planned { color: #6c757d; }
+    body { background: #f0f2f5; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(90deg,#1d3b5c,#152a45);">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/"><i class="fas fa-server me-2"></i>Nofal Panel</a>
+      <span class="navbar-text text-white-50 small">حالة الصفحات والميزات</span>
+      <div class="ms-auto">
+        {% if user.role == 'admin' %}
+        <a href="/admin/dashboard" class="btn btn-sm btn-outline-light me-1">WHM</a>
+        {% endif %}
+        {% if user.role != 'admin' %}
+        <a href="/cpanel/dashboard" class="btn btn-sm btn-outline-light me-1">cPanel</a>
+        {% endif %}
+        <a href="/api/status" class="btn btn-sm btn-outline-info" target="_blank" title="JSON">API</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card border-success"><div class="card-body text-center"><h3 class="text-success mb-0">{{ counts.live }}</h3><small>جاهز (live)</small></div></div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-warning"><div class="card-body text-center"><h3 class="text-warning mb-0">{{ counts.partial }}</h3><small>جزئي (partial)</small></div></div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-secondary"><div class="card-body text-center"><h3 class="text-secondary mb-0">{{ counts.planned }}</h3><small>مخطط (planned)</small></div></div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><strong><i class="fas fa-table me-2"></i>الجرد</strong></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>المسار</th>
+                <th>الاسم</th>
+                <th>القسم</th>
+                <th>الحالة</th>
+                <th>ملاحظة</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+              <tr>
+                <td><code class="small">{{ r.path }}</code></td>
+                <td>{{ r.name }}</td>
+                <td><span class="badge bg-light text-dark">{{ r.area }}</span></td>
+                <td>
+                  {% if r.status == 'live' %}<span class="badge bg-success">live</span>
+                  {% elif r.status == 'partial' %}<span class="badge bg-warning text-dark">partial</span>
+                  {% else %}<span class="badge bg-secondary">planned</span>{% endif %}
+                </td>
+                <td class="small text-muted">{{ r.note or '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <p class="text-muted small mt-3 mb-0">يُحدَّث هذا الجدول مع كل إصدار. للتفاصيل التقنية راجع <code>docs/PAGE_STATUS.md</code>.</p>
+  </div>
+</body>
+</html>

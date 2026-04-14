@@ -1,0 +1,403 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}Web Terminal - Nofal Panel{% endblock %}
+
+{% block extra_head %}
+<!-- xterm.js -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+<style>
+  .terminal-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    min-height: 500px;
+  }
+  .terminal-toolbar {
+    background: #1a1a2e;
+    border: 1px solid #16213e;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .terminal-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .terminal-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .terminal-dot:hover { opacity: 0.7; }
+  .dot-red   { background: #ff5f57; }
+  .dot-yellow{ background: #ffbd2e; }
+  .dot-green { background: #28c940; }
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    color: #8892b0;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+  }
+  .terminal-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .terminal-btn {
+    background: #16213e;
+    border: 1px solid #0f3460;
+    color: #8892b0;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .terminal-btn:hover {
+    background: #0f3460;
+    color: #e94560;
+  }
+  .terminal-container {
+    flex: 1;
+    background: #0d0d0d;
+    border: 1px solid #16213e;
+    border-radius: 0 0 8px 8px;
+    padding: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  #terminal {
+    width: 100%;
+    height: 100%;
+  }
+  .terminal-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #8892b0;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #28c940;
+    animation: pulse 2s infinite;
+  }
+  .status-dot.disconnected { background: #ff5f57; animation: none; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .terminal-info-bar {
+    background: #1a1a2e;
+    border: 1px solid #16213e;
+    border-top: none;
+    padding: 6px 16px;
+    display: flex;
+    gap: 20px;
+    font-size: 11px;
+    color: #8892b0;
+    font-family: 'Courier New', monospace;
+  }
+  .terminal-info-bar span { display: flex; align-items: center; gap: 6px; }
+  .terminal-info-bar i { color: #e94560; }
+
+  /* Warning banner */
+  .terminal-warning {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #e94560;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ccd6f6;
+    font-size: 13px;
+  }
+  .terminal-warning i { color: #e94560; font-size: 18px; flex-shrink: 0; }
+
+  /* Fullscreen mode */
+  .terminal-page.fullscreen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: #0d0d0d;
+    padding: 0;
+    margin: 0;
+  }
+  .terminal-page.fullscreen .terminal-container {
+    border-radius: 0;
+    border: none;
+  }
+  .terminal-page.fullscreen .terminal-toolbar {
+    border-radius: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-terminal me-2"></i>Web Terminal</h2>
+  <span class="text-muted">Secure shell access for <strong>{{ user.username }}</strong></span>
+</div>
+
+<div class="terminal-warning">
+  <i class="fas fa-shield-alt"></i>
+  <div>
+    <strong>Security Notice:</strong> This terminal runs as your hosting account user <code>{{ user.username }}</code>.
+    All commands are logged. Do not share terminal access with others.
+    The session auto-disconnects after 5 minutes of inactivity.
+  </div>
+</div>
+
+<div class="terminal-page" id="terminalPage">
+  <div class="terminal-toolbar">
+    <div class="terminal-dots">
+      <div class="terminal-dot dot-red"    onclick="closeTerminal()" title="Close"></div>
+      <div class="terminal-dot dot-yellow" onclick="clearTerminal()" title="Clear"></div>
+      <div class="terminal-dot dot-green"  onclick="toggleFullscreen()" title="Fullscreen"></div>
+    </div>
+    <div class="terminal-title">
+      <span id="termTitle">{{ user.username }}@nofal-panel:~</span>
+    </div>
+    <div class="terminal-actions">
+      <div class="terminal-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+      </div>
+      <button class="terminal-btn" onclick="clearTerminal()">
+        <i class="fas fa-eraser me-1"></i>Clear
+      </button>
+      <button class="terminal-btn" onclick="toggleFullscreen()">
+        <i class="fas fa-expand me-1"></i>Fullscreen
+      </button>
+      <button class="terminal-btn" onclick="reconnect()">
+        <i class="fas fa-sync me-1"></i>Reconnect
+      </button>
+    </div>
+  </div>
+
+  <div class="terminal-container">
+    <div id="terminal"></div>
+  </div>
+
+  <div class="terminal-info-bar">
+    <span><i class="fas fa-user"></i> {{ user.username }}</span>
+    <span><i class="fas fa-globe"></i> {{ user.primary_domain }}</span>
+    <span><i class="fas fa-folder"></i> /home/{{ user.username }}</span>
+    <span><i class="fas fa-code-branch"></i> bash</span>
+    <span id="termSize" style="margin-left:auto;"><i class="fas fa-arrows-alt"></i> 80×24</span>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.js"></script>
+<script>
+let term, fitAddon, socket;
+let isFullscreen = false;
+let reconnectTimer = null;
+
+function initTerminal() {
+  // Clean up existing terminal
+  if (term) {
+    term.dispose();
+  }
+
+  term = new Terminal({
+    cursorBlink: true,
+    cursorStyle: 'block',
+    fontSize: 14,
+    fontFamily: '"Cascadia Code", "Fira Code", "JetBrains Mono", "Courier New", monospace',
+    fontWeight: 'normal',
+    lineHeight: 1.2,
+    letterSpacing: 0,
+    scrollback: 5000,
+    theme: {
+      background:    '#0d0d0d',
+      foreground:    '#cdd6f4',
+      cursor:        '#f5c2e7',
+      cursorAccent:  '#0d0d0d',
+      black:         '#45475a',
+      red:           '#f38ba8',
+      green:         '#a6e3a1',
+      yellow:        '#f9e2af',
+      blue:          '#89b4fa',
+      magenta:       '#f5c2e7',
+      cyan:          '#94e2d5',
+      white:         '#bac2de',
+      brightBlack:   '#585b70',
+      brightRed:     '#f38ba8',
+      brightGreen:   '#a6e3a1',
+      brightYellow:  '#f9e2af',
+      brightBlue:    '#89b4fa',
+      brightMagenta: '#f5c2e7',
+      brightCyan:    '#94e2d5',
+      brightWhite:   '#a6adc8',
+      selection:     '#45475a',
+    },
+    allowProposedApi: true,
+  });
+
+  fitAddon = new FitAddon.FitAddon();
+  const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+
+  term.loadAddon(fitAddon);
+  term.loadAddon(webLinksAddon);
+
+  term.open(document.getElementById('terminal'));
+  fitAddon.fit();
+
+  connectWebSocket();
+}
+
+function connectWebSocket() {
+  const statusDot  = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+
+  statusDot.className  = 'status-dot';
+  statusText.textContent = 'Connecting...';
+
+  term.writeln('\x1b[36m╔══════════════════════════════════════════════════╗\x1b[0m');
+  term.writeln('\x1b[36m║\x1b[0m  \x1b[32mNofal Panel\x1b[0m — Web Terminal v1.0               \x1b[36m║\x1b[0m');
+  term.writeln('\x1b[36m║\x1b[0m  Connected as: \x1b[33m{{ user.username }}\x1b[0m                      \x1b[36m║\x1b[0m');
+  term.writeln('\x1b[36m║\x1b[0m  Domain: \x1b[34m{{ user.primary_domain }}\x1b[0m                   \x1b[36m║\x1b[0m');
+  term.writeln('\x1b[36m╚══════════════════════════════════════════════════╝\x1b[0m');
+  term.writeln('');
+
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${proto}//${location.host}/cpanel/terminal/ws`;
+
+  try {
+    socket = new WebSocket(wsUrl);
+    socket.binaryType = 'arraybuffer';
+  } catch(e) {
+    term.writeln(`\x1b[31m[ERROR] WebSocket failed: ${e.message}\x1b[0m`);
+    statusDot.className  = 'status-dot disconnected';
+    statusText.textContent = 'Failed';
+    return;
+  }
+
+  socket.onopen = () => {
+    statusDot.className  = 'status-dot';
+    statusText.textContent = 'Connected';
+    term.writeln('\x1b[32m[OK] Connection established!\x1b[0m\r\n');
+
+    // Send initial resize
+    sendResize();
+
+    // Keyboard input → WebSocket
+    term.onData(data => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(new TextEncoder().encode(data));
+      }
+    });
+  };
+
+  socket.onmessage = (event) => {
+    if (event.data instanceof ArrayBuffer) {
+      term.write(new Uint8Array(event.data));
+    } else if (typeof event.data === 'string') {
+      if (event.data) term.write(event.data);
+    }
+  };
+
+  socket.onclose = (event) => {
+    statusDot.className  = 'status-dot disconnected';
+    statusText.textContent = 'Disconnected';
+    term.writeln('\r\n\x1b[33m[Session ended. Click Reconnect to start a new session.]\x1b[0m');
+  };
+
+  socket.onerror = () => {
+    statusDot.className  = 'status-dot disconnected';
+    statusText.textContent = 'Error';
+    term.writeln('\r\n\x1b[31m[Connection error. Please reconnect.]\x1b[0m');
+  };
+}
+
+function sendResize() {
+  if (!term || !socket || socket.readyState !== WebSocket.OPEN) return;
+  const msg = JSON.stringify({
+    type: 'resize',
+    cols: term.cols,
+    rows: term.rows
+  });
+  socket.send(msg);
+  document.getElementById('termSize').innerHTML =
+    `<i class="fas fa-arrows-alt"></i> ${term.cols}×${term.rows}`;
+}
+
+function clearTerminal() {
+  if (term) term.clear();
+}
+
+function closeTerminal() {
+  if (socket) socket.close();
+  if (term)   term.writeln('\r\n\x1b[31m[Terminal closed]\x1b[0m');
+  document.getElementById('statusDot').className  = 'status-dot disconnected';
+  document.getElementById('statusText').textContent = 'Closed';
+}
+
+function reconnect() {
+  if (socket) {
+    try { socket.close(); } catch(e) {}
+  }
+  if (term) term.clear();
+  connectWebSocket();
+}
+
+function toggleFullscreen() {
+  const page = document.getElementById('terminalPage');
+  isFullscreen = !isFullscreen;
+  page.classList.toggle('fullscreen', isFullscreen);
+  setTimeout(() => {
+    fitAddon.fit();
+    sendResize();
+  }, 100);
+}
+
+// Handle window resize
+const resizeObserver = new ResizeObserver(() => {
+  if (fitAddon) {
+    fitAddon.fit();
+    sendResize();
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F11' || (e.key === 'Escape' && isFullscreen)) {
+    e.preventDefault();
+    toggleFullscreen();
+  }
+});
+
+// Initialize when DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  initTerminal();
+  const container = document.getElementById('terminal');
+  if (container) resizeObserver.observe(container);
+});
+
+// Resize on window resize
+window.addEventListener('resize', () => {
+  if (fitAddon) {
+    setTimeout(() => {
+      fitAddon.fit();
+      sendResize();
+    }, 100);
+  }
+});
+</script>
+{% endblock %}

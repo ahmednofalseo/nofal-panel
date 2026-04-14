@@ -1,0 +1,60 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Server information - Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-info-circle me-2"></i>Server information</h2>
+  <span class="text-muted">Hardware &amp; core services (WHM » Server information)</span>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="card panel-card h-100">
+      <div class="card-header"><strong>System</strong></div>
+      <div class="card-body">
+        <table class="table table-sm table-borderless mb-0">
+          <tr><td class="text-muted">Hostname</td><td><strong>{{ info.hostname }}</strong></td></tr>
+          <tr><td class="text-muted">OS</td><td>{{ info.os }}</td></tr>
+          <tr><td class="text-muted">Kernel</td><td><small>{{ info.kernel[:80] }}{% if info.kernel|length > 80 %}…{% endif %}</small></td></tr>
+          <tr><td class="text-muted">Architecture</td><td>{{ info.architecture }}</td></tr>
+          <tr><td class="text-muted">CPU</td><td>{{ info.cpu_model }} <small class="text-muted">({{ info.cpu_count }} threads)</small></td></tr>
+          <tr><td class="text-muted">Uptime</td><td>{{ info.uptime }}</td></tr>
+          <tr><td class="text-muted">Boot</td><td><small>{{ info.boot_time }}</small></td></tr>
+          <tr><td class="text-muted">Python</td><td><small>{{ info.python_version }}</small></td></tr>
+        </table>
+        {% if info.error is defined and info.error %}<p class="text-warning small mb-0 mt-2">{{ info.error }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card panel-card h-100">
+      <div class="card-header"><strong>Core services</strong></div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr>
+            <td>Nginx</td>
+            <td><span class="badge {% if nginx.status == 'running' %}bg-success{% else %}bg-secondary{% endif %}">{{ nginx.status }}</span></td>
+          </tr>
+          <tr>
+            <td>MySQL</td>
+            <td><span class="badge {% if mysql.status == 'running' %}bg-success{% else %}bg-secondary{% endif %}">{{ mysql.status }}</span></td>
+          </tr>
+          {% if mysql.version is defined %}
+          <tr><td colspan="2"><small class="text-muted">Version: {{ mysql.version }} · Uptime (s): {{ mysql.uptime_seconds }} · Threads: {{ mysql.threads_connected }}</small></td></tr>
+          {% endif %}
+          {% if mysql.error is defined and mysql.error %}
+          <tr><td colspan="2"><small class="text-danger">{{ mysql.error }}</small></td></tr>
+          {% endif %}
+          <tr><td>Postfix</td><td><code>{{ mail.postfix }}</code></td></tr>
+          <tr><td>Dovecot</td><td><code>{{ mail.dovecot }}</code></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card panel-card">
+  <div class="card-body">
+    <p class="text-muted small mb-0">Production WHM expects AlmaLinux / CloudLinux / Ubuntu with root, BIND, Exim/Dovecot, etc. This panel maps the same concepts to your stack.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Resource monitor - Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-chart-line me-2"></i>Resource usage</h2>
+  <span class="text-muted">WHM-style live metrics (refreshed on load; dashboard polls API every 10s)</span>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="resource-card">
+      <div class="d-flex justify-content-between mb-2">
+        <strong><i class="fas fa-microchip me-2 text-primary"></i>CPU</strong>
+        <span class="badge bg-primary" id="mon-cpu-pct">{{ stats.cpu.percent }}%</span>
+      </div>
+      <div class="progress"><div class="progress-bar bg-primary" id="mon-cpu-bar" style="width:{{ stats.cpu.percent }}%"></div></div>
+      <small class="text-muted">{{ stats.cpu.count }} logical CPUs | Load: {{ "%.2f"|format(stats.cpu.load_avg[0]) }}, {{ "%.2f"|format(stats.cpu.load_avg[1]) }}, {{ "%.2f"|format(stats.cpu.load_avg[2]) }}</small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="resource-card">
+      <div class="d-flex justify-content-between mb-2">
+        <strong><i class="fas fa-memory me-2 text-success"></i>Memory</strong>
+        <span class="badge bg-success">{{ stats.memory.percent }}%</span>
+      </div>
+      <div class="progress"><div class="progress-bar bg-success" style="width:{{ stats.memory.percent }}%"></div></div>
+      <small class="text-muted">{{ stats.memory.used_mb }} MB used / {{ stats.memory.total_mb }} MB total | Swap: {{ stats.memory.swap_used_mb }}/{{ stats.memory.swap_total_mb }} MB</small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="resource-card">
+      <div class="d-flex justify-content-between mb-2">
+        <strong><i class="fas fa-hdd me-2 text-warning"></i>Disk</strong>
+        <span class="badge bg-warning text-dark">{% if stats.disk %}{{ stats.disk[0].percent }}%{% else %}N/A{% endif %}</span>
+      </div>
+      <div class="progress"><div class="progress-bar bg-warning" style="width:{% if stats.disk %}{{ stats.disk[0].percent }}{% else %}0{% endif %}%"></div></div>
+      <small class="text-muted">
+        {% if stats.disk %}
+        {{ stats.disk[0].mountpoint }} — {{ stats.disk[0].used_gb }} / {{ stats.disk[0].total_gb }} GB ({{ stats.disk[0].fstype }})
+        {% else %}No readable partitions{% endif %}
+      </small>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card panel-card">
+      <div class="card-header"><strong><i class="fas fa-server me-2"></i>Server summary</strong></div>
+      <div class="card-body">
+        <table class="table table-sm table-borderless mb-0">
+          <tr><td class="text-muted" style="width:40%">Hostname</td><td><strong>{{ stats.server_info.hostname }}</strong></td></tr>
+          <tr><td class="text-muted">OS</td><td>{{ stats.server_info.os }}</td></tr>
+          <tr><td class="text-muted">CPU model</td><td><small>{{ stats.server_info.cpu_model }}</small></td></tr>
+          <tr><td class="text-muted">Uptime</td><td>{{ stats.server_info.uptime }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card panel-card">
+      <div class="card-header"><strong><i class="fas fa-network-wired me-2"></i>Network</strong></div>
+      <div class="card-body">
+        <p class="small text-muted mb-2">Since boot (counters)</p>
+        <p class="mb-1">Sent <strong>{{ stats.network.bytes_sent_mb }}</strong> MB · Recv <strong>{{ stats.network.bytes_recv_mb }}</strong> MB</p>
+        <ul class="list-unstyled small mb-0">
+          {% for iface in stats.network.interfaces[:8] %}
+          <li><i class="fas fa-ethernet me-1 text-muted"></i>{{ iface.name }}: <code>{{ iface.ip }}</code></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+setInterval(() => {
+  fetch('/admin/server/monitor/api')
+    .then(r => r.json())
+    .then(data => {
+      const p = data.cpu.percent;
+      const el = document.getElementById('mon-cpu-pct');
+      const bar = document.getElementById('mon-cpu-bar');
+      if (el) el.textContent = p + '%';
+      if (bar) bar.style.width = p + '%';
+    }).catch(() => {});
+}, 8000);
+</script>
+{% endblock %}

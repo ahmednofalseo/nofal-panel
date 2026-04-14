@@ -1,0 +1,71 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Service manager - Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-cogs me-2"></i>Service manager</h2>
+  <span class="text-muted">Start / stop / restart (same idea as WHM » Restart Services)</span>
+</div>
+
+<div class="card panel-card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Status</th>
+            <th>Enabled</th>
+            <th style="width:220px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for svc in services %}
+          <tr>
+            <td>
+              <i class="fas fa-circle me-2 {% if svc.is_active %}text-success{% else %}text-danger{% endif %}" style="font-size:8px"></i>
+              {{ svc.display }}
+              {% if svc.note is defined %}<br><small class="text-warning">{{ svc.note }}</small>{% endif %}
+            </td>
+            <td>
+              {% if svc.status == 'n/a' %}
+              <span class="badge bg-secondary">N/A</span>
+              {% elif svc.is_active %}
+              <span class="badge bg-success">Running</span>
+              {% else %}
+              <span class="badge bg-danger">Stopped</span>
+              {% endif %}
+            </td>
+            <td>{% if svc.enabled is defined and svc.enabled %}<span class="badge bg-info">enabled</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>
+              {% if svc.status != 'n/a' %}
+              {% if svc.is_active %}
+              <button type="button" class="btn btn-sm btn-outline-warning" onclick="svcAction('{{ svc.name }}','restart')">Restart</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="svcAction('{{ svc.name }}','reload')">Reload</button>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="svcAction('{{ svc.name }}','stop')">Stop</button>
+              {% else %}
+              <button type="button" class="btn btn-sm btn-outline-success" onclick="svcAction('{{ svc.name }}','start')">Start</button>
+              {% endif %}
+              {% else %}
+              <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function svcAction(name, action) {
+  fetch('/admin/server/services/' + name + '/' + action, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) location.reload();
+      else alert((data.stderr || data.error || data.detail || 'Failed'));
+    });
+}
+</script>
+{% endblock %}

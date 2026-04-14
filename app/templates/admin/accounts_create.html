@@ -1,0 +1,97 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Create Account - Nofal Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-user-plus me-2"></i>Create New Account</h2>
+  <span class="text-muted">Set up a new hosting account</span>
+</div>
+
+{% if error %}
+<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>{{ error }}</div>
+{% endif %}
+
+<form method="POST" action="/admin/accounts/create">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card panel-card">
+        <div class="card-header"><strong><i class="fas fa-user me-2"></i>Account Details</strong></div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Username <span class="text-danger">*</span></label>
+            <input type="text" name="username" class="form-control" required pattern="[a-z0-9_]{3,20}" placeholder="e.g. john_doe">
+            <small class="text-muted">Lowercase, numbers, underscore. 3-20 chars.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email <span class="text-danger">*</span></label>
+            <input type="email" name="email" class="form-control" required placeholder="user@example.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="text" name="password" id="passInput" class="form-control" required value="{{ generate_password() if generate_password is defined else '' }}" placeholder="Strong password">
+              <button type="button" class="btn btn-outline-secondary" onclick="genPass()"><i class="fas fa-random"></i></button>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Primary Domain <span class="text-danger">*</span></label>
+            <input type="text" name="domain" class="form-control" required placeholder="example.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">IP Address</label>
+            <input type="text" name="ip_address" class="form-control" placeholder="Server IP (e.g. 192.168.1.1)" value="127.0.0.1">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card panel-card">
+        <div class="card-header"><strong><i class="fas fa-box me-2"></i>Package & Contact</strong></div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Package <span class="text-danger">*</span></label>
+            <select name="package_id" class="form-select" required>
+              {% for pkg in packages %}
+              <option value="{{ pkg.id }}">{{ pkg.name }} ({{ pkg.disk_quota_mb }}MB / {{ pkg.email_limit }} emails)</option>
+              {% endfor %}
+              {% if not packages %}
+              <option disabled>No packages - Create one first</option>
+              {% endif %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">First Name</label>
+            <input type="text" name="first_name" class="form-control" placeholder="Optional">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Last Name</label>
+            <input type="text" name="last_name" class="form-control" placeholder="Optional">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Company</label>
+            <input type="text" name="company" class="form-control" placeholder="Optional">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-3 d-flex gap-2">
+    <button type="submit" class="btn btn-success btn-lg">
+      <i class="fas fa-check me-2"></i>Create Account
+    </button>
+    <a href="/admin/accounts" class="btn btn-secondary btn-lg">Cancel</a>
+  </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+function genPass() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+  let pass = '';
+  for(let i=0; i<16; i++) pass += chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('passInput').value = pass;
+}
+genPass();
+</script>
+{% endblock %}

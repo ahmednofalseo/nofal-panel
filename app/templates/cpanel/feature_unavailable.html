@@ -1,0 +1,11 @@
+{% extends "cpanel/base_cpanel.html" %}
+{% block title %}{{ label }} — قيد التطوير{% endblock %}
+{% block content %}
+<div class="jupiter-empty-state text-center py-5">
+  <div class="mb-4"><i class="fas fa-hard-hat fa-4x text-warning"></i></div>
+  <h2 class="h4">{{ label }}</h2>
+  <p class="text-muted col-lg-8 mx-auto">هذه الأداة ضمن خارطة الطريق لمطابقة cPanel (Jupiter). الوظائف الأساسية متاحة من القائمة الجانبية والصفحة الرئيسية.</p>
+  <a href="/cpanel/dashboard" class="btn btn-primary mt-2"><i class="fas fa-home me-2"></i>العودة للوحة التحكم</a>
+  <a href="/status" class="btn btn-outline-secondary mt-2 ms-2"><i class="fas fa-list-check me-2"></i>حالة النظام</a>
+</div>
+{% endblock %}

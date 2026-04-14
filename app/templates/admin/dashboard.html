@@ -1,0 +1,226 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Dashboard - Nofal Panel WHM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fas fa-tachometer-alt me-2"></i>Server Dashboard</h2>
+  <span class="text-muted">System Overview & Statistics</span>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-xl-3 col-md-6">
+    <div class="stat-card primary">
+      <div class="stat-icon"><i class="fas fa-users"></i></div>
+      <div class="stat-info">
+        <h3>{{ total_accounts }}</h3>
+        <p>Total Accounts</p>
+      </div>
+      <a href="/admin/accounts" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="stat-card success">
+      <div class="stat-icon"><i class="fas fa-globe"></i></div>
+      <div class="stat-info">
+        <h3>{{ total_domains }}</h3>
+        <p>Total Domains</p>
+      </div>
+      <a href="/admin/dns" class="stat-link">DNS Manager <i class="fas fa-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="stat-card warning">
+      <div class="stat-icon"><i class="fas fa-box"></i></div>
+      <div class="stat-info">
+        <h3>{{ total_packages }}</h3>
+        <p>Packages</p>
+      </div>
+      <a href="/admin/packages" class="stat-link">Manage <i class="fas fa-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="stat-card danger">
+      <div class="stat-icon"><i class="fas fa-ban"></i></div>
+      <div class="stat-info">
+        <h3>{{ suspended_accounts }}</h3>
+        <p>Suspended</p>
+      </div>
+      <a href="/admin/accounts" class="stat-link">View <i class="fas fa-arrow-right"></i></a>
+    </div>
+  </div>
+</div>
+
+<!-- Resource Bars -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="resource-card">
+      <div class="d-flex justify-content-between mb-2">
+        <strong><i class="fas fa-microchip me-2 text-primary"></i>CPU Usage</strong>
+        <span class="badge bg-primary" id="cpu-percent">{{ stats.cpu.percent }}%</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar bg-primary" id="cpu-bar" style="width:{{ stats.cpu.percent }}%"></div>
+      </div>
+      <small class="text-muted">{{ stats.cpu.count }} Cores | Load: {{ "%.2f"|format(stats.cpu.load_avg[0]) }}</small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="resource-card">
+      <div class="d-flex justify-content-between mb-2">
+        <strong><i class="fas fa-memory me-2 text-success"></i>RAM Usage</strong>
+        <span class="badge bg-success" id="mem-percent">{{ stats.memory.percent }}%</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar bg-success" id="mem-bar" style="width:{{ stats.memory.percent }}%"></div>
+      </div>
+      <small class="text-muted">{{ stats.memory.used_mb }} MB / {{ stats.memory.total_mb }} MB</small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="resource-card">
+      <div class="d-flex justify-content-between mb-2">
+        <strong><i class="fas fa-hdd me-2 text-warning"></i>Disk Usage</strong>
+        <span class="badge bg-warning" id="disk-percent">
+          {% if stats.disk %}{{ stats.disk[0].percent }}%{% else %}N/A{% endif %}
+        </span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar bg-warning" style="width:{% if stats.disk %}{{ stats.disk[0].percent }}{% else %}0{% endif %}%"></div>
+      </div>
+      <small class="text-muted">
+        {% if stats.disk %}{{ stats.disk[0].used_gb }} GB / {{ stats.disk[0].total_gb }} GB{% endif %}
+      </small>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Services Status -->
+  <div class="col-md-6">
+    <div class="card panel-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong><i class="fas fa-cogs me-2"></i>Services Status</strong>
+        <a href="/admin/server/services" class="btn btn-sm btn-outline-primary">Manage</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+          {% for svc in stats.services[:7] %}
+          <tr>
+            <td>
+              <i class="fas fa-circle me-2 {% if svc.is_active %}text-success{% else %}text-danger{% endif %}" style="font-size:8px"></i>{{ svc.display }}
+              {% if svc.note is defined %}<br><small class="text-warning">{{ svc.note }}</small>{% endif %}
+            </td>
+            <td>
+              <span class="badge {% if svc.status == 'n/a' %}bg-secondary{% elif svc.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                {% if svc.status == 'n/a' %}N/A{% elif svc.is_active %}Running{% else %}Stopped{% endif %}
+              </span>
+            </td>
+            <td>
+              {% if svc.status != 'n/a' %}
+              {% if svc.is_active %}
+              <button class="btn btn-xs btn-outline-warning" onclick="manageService('{{ svc.name }}', 'restart')">Restart</button>
+              {% else %}
+              <button class="btn btn-xs btn-outline-success" onclick="manageService('{{ svc.name }}', 'start')">Start</button>
+              {% endif %}
+              {% else %}<span class="text-muted small">—</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Accounts -->
+  <div class="col-md-6">
+    <div class="card panel-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong><i class="fas fa-users me-2"></i>Recent Accounts</strong>
+        <a href="/admin/accounts/create" class="btn btn-sm btn-success">+ Create</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Username</th><th>Domain</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+          {% for acc in recent_accounts %}
+          <tr>
+            <td><strong>{{ acc.username }}</strong></td>
+            <td><small>{{ acc.primary_domain }}</small></td>
+            <td>
+              {% if acc.is_suspended %}
+              <span class="badge bg-danger">Suspended</span>
+              {% else %}
+              <span class="badge bg-success">Active</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="/admin/accounts/{{ acc.id }}/login-as" class="btn btn-xs btn-outline-info" title="Login as user">
+                <i class="fas fa-sign-in-alt"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not recent_accounts %}
+          <tr><td colspan="4" class="text-center text-muted py-3">No accounts yet. <a href="/admin/accounts/create">Create one</a></td></tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Server Info -->
+<div class="row g-3 mt-1">
+  <div class="col-12">
+    <div class="card panel-card">
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-md-3 border-end">
+            <small class="text-muted">Hostname</small>
+            <div><strong>{{ stats.server_info.hostname }}</strong></div>
+          </div>
+          <div class="col-md-3 border-end">
+            <small class="text-muted">OS</small>
+            <div><strong>{{ stats.server_info.os }}</strong></div>
+          </div>
+          <div class="col-md-3 border-end">
+            <small class="text-muted">Uptime</small>
+            <div><strong>{{ stats.server_info.uptime }}</strong></div>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted">CPU</small>
+            <div><strong>{{ stats.server_info.cpu_count }} Cores</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function manageService(name, action) {
+  fetch(`/admin/server/services/${name}/${action}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+      if(data.success) location.reload();
+      else alert('Error: ' + (data.error || 'Failed'));
+    });
+}
+
+// Live stats refresh
+setInterval(() => {
+  fetch('/admin/server/monitor/api')
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('cpu-percent').textContent = data.cpu.percent + '%';
+      document.getElementById('cpu-bar').style.width = data.cpu.percent + '%';
+      document.getElementById('mem-percent').textContent = data.memory.percent + '%';
+      document.getElementById('mem-bar').style.width = data.memory.percent + '%';
+    }).catch(() => {});
+}, 10000);
+</script>
+{% endblock %}
