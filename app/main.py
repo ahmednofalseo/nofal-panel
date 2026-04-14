@@ -2,6 +2,8 @@
 NOFAL PANEL - Main FastAPI Application
 A WHM/cPanel-like hosting control panel
 """
+from __future__ import annotations
+
 import platform
 from fastapi import FastAPI, Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -15,40 +17,178 @@ from app.templating import templates
 from app.database import init_db, get_db, SessionLocal
 from app.auth import get_password_hash
 
-# ─── Create FastAPI App ──────────────────────────────────────────────────────
-app = FastAPI(
-    title="Nofal Panel",
-    description="WHM/cPanel-like Hosting Control Panel",
-    version=settings.PANEL_VERSION,
-    docs_url=None,
-    redoc_url=None,
-)
+def create_app() -> FastAPI:
+    """Create an app instance according to settings.APP_MODE."""
+    mode = settings.APP_MODE or "full"
 
-# ─── Static Files ─────────────────────────────────────────────────────────────
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    app = FastAPI(
+        title="Nofal Panel",
+        description="WHM/cPanel-like Hosting Control Panel",
+        version=settings.PANEL_VERSION,
+        docs_url=None,
+        redoc_url=None,
+    )
 
-# ─── Include Routers ─────────────────────────────────────────────────────────
-from app.routers import auth
-from app.routers.admin import accounts, packages, server, dns
-from app.routers.cpanel import dashboard, email, domains, databases, ftp, ssl, cron, files, terminal, features
-from app.routers import status as status_router
+    # Static files must be absolute (systemd cwd-safe)
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-app.include_router(auth.router)
-app.include_router(accounts.router)
-app.include_router(packages.router)
-app.include_router(server.router)
-app.include_router(dns.router)
-app.include_router(dashboard.router)
-app.include_router(email.router)
-app.include_router(domains.router)
-app.include_router(databases.router)
-app.include_router(ftp.router)
-app.include_router(ssl.router)
-app.include_router(cron.router)
-app.include_router(files.router)
-app.include_router(terminal.router)
-app.include_router(features.router)
-app.include_router(status_router.router)
+    # Routers
+    from app.routers import auth
+    from app.routers import status as status_router
+
+    app.include_router(auth.router)
+    app.include_router(status_router.router)
+
+    if mode in ("full", "admin"):
+        from app.routers.admin import accounts, packages, server, dns
+        app.include_router(accounts.router)
+        app.include_router(packages.router)
+        app.include_router(server.router)
+        app.include_router(dns.router)
+
+    if mode in ("full", "user"):
+        from app.routers.cpanel import dashboard, email, domains, databases, ftp, ssl, cron, files, terminal, features
+        app.include_router(dashboard.router)
+        app.include_router(email.router)
+        app.include_router(domains.router)
+        app.include_router(databases.router)
+        app.include_router(ftp.router)
+        app.include_router(ssl.router)
+        app.include_router(cron.router)
+        app.include_router(files.router)
+        app.include_router(terminal.router)
+        app.include_router(features.router)
+
+    @app.middleware("http")
+    async def runtime_notice_middleware(request: Request, call_next):
+        """Warn on non-Linux hosts: WHM service control expects Ubuntu/Debian."""
+        request.state.whm_runtime_notice = None
+        if platform.system() != "Linux":
+            request.state.whm_runtime_notice = (
+                "هذا الجهاز ليس Linux. أوامر WHM الحقيقية (systemctl، UFW، BIND، …) "
+                "تعمل على Ubuntu/Debian على الخادم. الواجهة تعرض البيانات المحلية المتاحة فقط."
+            )
+        return await call_next(request)
+
+    def _public_url(request: Request, port: int) -> str:
+        scheme = (request.headers.get("x-forwarded-proto") or request.url.scheme or "https").split(",")[0].strip()
+        host = (request.headers.get("x-forwarded-host") or request.url.hostname or "").split(",")[0].strip()
+        return f"{scheme}://{host}:{port}"
+
+    @app.get("/")
+    async def root(request: Request):
+        token = request.cookies.get("access_token")
+        if token:
+            from app.auth import decode_token
+            payload = decode_token(token)
+            if payload:
+                role = payload.get("role", "user")
+                if role == "admin":
+                    if mode == "user":
+                        return RedirectResponse(url=_public_url(request, settings.ADMIN_PUBLIC_PORT), status_code=302)
+                    return RedirectResponse(url="/admin/dashboard", status_code=302)
+                # user
+                if mode == "admin":
+                    return RedirectResponse(url=_public_url(request, settings.USER_PUBLIC_PORT), status_code=302)
+                return RedirectResponse(url="/cpanel/dashboard", status_code=302)
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    # Startup: Initialize DB + Admin User
+    @app.on_event("startup")
+    async def startup_event():
+        print(f"[START] Starting {settings.PANEL_NAME} v{settings.PANEL_VERSION} ({mode})...")
+        init_db()
+
+        db = SessionLocal()
+        try:
+            from app.models.user import User
+            from app.models.package import Package
+
+            admin = db.query(User).filter(User.username == settings.ADMIN_USERNAME).first()
+            if not admin:
+                admin_user = User(
+                    username=settings.ADMIN_USERNAME,
+                    email=settings.ADMIN_EMAIL,
+                    hashed_password=get_password_hash(settings.ADMIN_PASSWORD),
+                    role="admin",
+                    is_active=True,
+                    first_name="Admin",
+                    last_name="User",
+                )
+                db.add(admin_user)
+                print(f"[OK] Admin user created: {settings.ADMIN_USERNAME}")
+
+            if db.query(Package).count() == 0:
+                packages_data = [
+                    Package(
+                        name="Starter",
+                        description="Basic hosting package",
+                        disk_quota_mb=1024,
+                        bandwidth_limit_mb=10240,
+                        email_limit=5,
+                        db_limit=3,
+                        ftp_limit=2,
+                        subdomain_limit=5,
+                        addon_domain_limit=1,
+                        price_monthly=5.99,
+                        is_active=True,
+                        is_default=True,
+                    ),
+                    Package(
+                        name="Business",
+                        description="Professional hosting package",
+                        disk_quota_mb=5120,
+                        bandwidth_limit_mb=51200,
+                        email_limit=25,
+                        db_limit=10,
+                        ftp_limit=10,
+                        subdomain_limit=20,
+                        addon_domain_limit=5,
+                        has_ssh=True,
+                        price_monthly=14.99,
+                        is_active=True,
+                    ),
+                    Package(
+                        name="Pro",
+                        description="Premium unlimited hosting",
+                        disk_quota_mb=20480,
+                        bandwidth_limit_mb=0,
+                        email_limit=0,
+                        db_limit=0,
+                        ftp_limit=0,
+                        subdomain_limit=0,
+                        addon_domain_limit=10,
+                        has_ssh=True,
+                        has_softaculous=True,
+                        price_monthly=29.99,
+                        is_active=True,
+                    ),
+                ]
+                for pkg in packages_data:
+                    db.add(pkg)
+                print("[OK] Default packages created (Starter, Business, Pro)")
+
+            db.commit()
+        finally:
+            db.close()
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        loc = None
+        if exc.headers:
+            loc = exc.headers.get("Location") or exc.headers.get("location")
+        if loc and exc.status_code in (301, 302, 303, 307, 308):
+            return RedirectResponse(url=loc, status_code=exc.status_code)
+        if exc.status_code == 403:
+            return templates.TemplateResponse("errors/403.html", {"request": request}, status_code=403)
+        if exc.status_code == 404:
+            return templates.TemplateResponse("errors/404.html", {"request": request}, status_code=404)
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+
+    return app
+
+
+app = create_app()
 
 
 @app.middleware("http")

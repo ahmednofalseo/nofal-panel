@@ -48,6 +48,14 @@ class Settings:
     # WHM / Create Account: default public IP for DNS A records (not 127.0.0.1 in production)
     PANEL_PUBLIC_IP: str = os.getenv("PANEL_PUBLIC_IP", "").strip()
 
+    # Deployment modes (WHM/Admin vs cPanel/User)
+    # admin: expose /admin + /auth
+    # user:  expose /cpanel + /auth
+    # full:  expose both (local dev)
+    APP_MODE: str = os.getenv("APP_MODE", "full").strip().lower()
+    ADMIN_PUBLIC_PORT: int = int(os.getenv("ADMIN_PUBLIC_PORT", "2020"))
+    USER_PUBLIC_PORT: int = int(os.getenv("USER_PUBLIC_PORT", "3030"))
+
     PANEL_VERSION: str = "1.0.0"
 
 settings = Settings()

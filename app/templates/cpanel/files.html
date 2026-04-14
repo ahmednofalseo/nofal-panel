@@ -1,8 +1,124 @@
 {% extends "cpanel/base_cpanel.html" %}
-{% block title %}Files - Nofal Panel{% endblock %}
+{% block title %}File Manager — Nofal Panel{% endblock %}
 {% block content %}
-<div class="page-header"><h2><i class="fas fa-circle me-2"></i>Files</h2></div>
-<div class="card panel-card"><div class="card-body">
-  <p class="text-muted">Module loaded. Full UI is available.</p>
-</div></div>
+<div class="page-header mb-3">
+  <h2 class="h3 jupiter-page-title"><i class="fas fa-folder-open me-2 text-primary"></i>File Manager</h2>
+  <p class="text-muted small mb-0">إدارة ملفات حسابك داخل <code>{{ home }}</code>. (رفع الملفات مقيد بأنواع شائعة لتقليل المخاطر.)</p>
+</div>
+
+<div class="card jupiter-card mb-3">
+  <div class="card-header jupiter-card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-location-dot me-2"></i>{{ current_path }}</span>
+    <a class="btn btn-sm btn-outline-secondary" href="/cpanel/files"><i class="fas fa-house me-1"></i>Home</a>
+  </div>
+  <div class="card-body">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb small mb-0">
+        <li class="breadcrumb-item"><a href="/cpanel/files">Home</a></li>
+        {% for b in breadcrumbs %}
+          <li class="breadcrumb-item"><a href="/cpanel/files?path={{ b.path }}">{{ b.name }}</a></li>
+        {% endfor %}
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card jupiter-card mb-3">
+      <div class="card-header jupiter-card-header"><i class="fas fa-cloud-upload-alt me-2"></i>Upload</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/files/upload" enctype="multipart/form-data" class="small">
+          <input type="hidden" name="path" value="{{ current_path if current_path != '.' else '' }}">
+          <div class="mb-2">
+            <input class="form-control form-control-sm" type="file" name="files" multiple required>
+            <div class="text-muted mt-1" style="font-size:.75rem">
+              ملحوظة: الملفات المخفية (dotfiles) محجوبة ما عدا <code>.htaccess</code> و<code>.user.ini</code> و<code>.well-known</code>.
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm w-100" type="submit">رفع الملفات</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header"><i class="fas fa-folder-plus me-2"></i>Create Folder</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/files/create-folder" class="small">
+          <input type="hidden" name="path" value="{{ current_path if current_path != '.' else '' }}">
+          <div class="mb-2">
+            <label class="form-label">Folder name</label>
+            <input class="form-control form-control-sm" name="folder_name" placeholder="new-folder" required>
+          </div>
+          <button class="btn btn-outline-primary btn-sm w-100" type="submit">Create</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header"><i class="fas fa-list me-2"></i>Items</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light small">
+              <tr>
+                <th>Name</th>
+                <th class="text-end">Size</th>
+                <th class="text-center">Perms</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="small">
+              {% if current_path and current_path != '.' %}
+              <tr>
+                <td>
+                  <i class="fas fa-level-up-alt me-2 text-muted"></i>
+                  <a href="/cpanel/files?path={{ current_path.rsplit('/', 1)[0] if '/' in current_path else '' }}">..</a>
+                </td>
+                <td class="text-end text-muted">—</td>
+                <td class="text-center text-muted">—</td>
+                <td class="text-end text-muted">—</td>
+              </tr>
+              {% endif %}
+
+              {% for it in items %}
+              <tr>
+                <td>
+                  {% if it.is_dir %}
+                    <i class="fas fa-folder me-2 text-warning"></i>
+                    <a href="/cpanel/files?path={{ it.path }}">{{ it.name }}</a>
+                  {% else %}
+                    <i class="fas fa-file me-2 text-secondary"></i>
+                    <span>{{ it.name }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">{{ it.size }}</td>
+                <td class="text-center"><code>{{ it.perms }}</code></td>
+                <td class="text-end text-nowrap">
+                  {% if not it.is_dir %}
+                    <a class="btn btn-outline-secondary btn-sm py-0" href="/cpanel/files/download?path={{ it.path }}"><i class="fas fa-download"></i></a>
+                    <a class="btn btn-outline-primary btn-sm py-0" href="/cpanel/files/edit?path={{ it.path }}"><i class="fas fa-pen"></i></a>
+                  {% endif %}
+                  <form method="post" action="/cpanel/files/delete" class="d-inline" onsubmit="return confirm('Delete {{ it.name }} ?');">
+                    <input type="hidden" name="path" value="{{ current_path if current_path != '.' else '' }}">
+                    <input type="hidden" name="item_name" value="{{ it.name }}">
+                    <button class="btn btn-outline-danger btn-sm py-0" type="submit"><i class="fas fa-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-muted text-center p-4">Folder is empty.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer small text-muted">
+        Tip: لفتح الموقع ضع ملفاتك في <code>/home/{{ user.username }}/public_html</code>.
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

@@ -4,11 +4,17 @@ from app.templating import templates
 from sqlalchemy.orm import Session
 from datetime import datetime
 from app.database import get_db
+from app.config import settings
 from app.auth import verify_password, create_access_token, get_password_hash
 from app.models.user import User
 from app.models.activity_log import ActivityLog
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+def _public_url(request: Request, port: int) -> str:
+    scheme = (request.headers.get("x-forwarded-proto") or request.url.scheme or "https").split(",")[0].strip()
+    host = (request.headers.get("x-forwarded-host") or request.url.hostname or "").split(",")[0].strip()
+    return f"{scheme}://{host}:{port}"
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -20,7 +26,11 @@ async def login_page(request: Request):
         if payload:
             user_role = payload.get("role", "user")
             if user_role == "admin":
+                if settings.APP_MODE == "user":
+                    return RedirectResponse(url=_public_url(request, settings.ADMIN_PUBLIC_PORT), status_code=302)
                 return RedirectResponse(url="/admin/dashboard", status_code=302)
+            if settings.APP_MODE == "admin":
+                return RedirectResponse(url=_public_url(request, settings.USER_PUBLIC_PORT), status_code=302)
             return RedirectResponse(url="/cpanel/dashboard", status_code=302)
     return templates.TemplateResponse("login.html", {"request": request})
 
@@ -65,7 +75,10 @@ async def login(
     db.commit()
 
     # Redirect based on role
-    redirect_url = "/admin/dashboard" if user.role == "admin" else "/cpanel/dashboard"
+    if user.role == "admin":
+        redirect_url = _public_url(request, settings.ADMIN_PUBLIC_PORT) if settings.APP_MODE == "user" else "/admin/dashboard"
+    else:
+        redirect_url = _public_url(request, settings.USER_PUBLIC_PORT) if settings.APP_MODE == "admin" else "/cpanel/dashboard"
     response = RedirectResponse(url=redirect_url, status_code=302)
     response.set_cookie(key="access_token", value=token, httponly=True, max_age=86400, samesite="lax")
     return response
