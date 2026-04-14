@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Run on the VPS as root after you can SSH in.
-# Pulls latest main, sets ADMIN_PUBLIC_PORT=443, installs Nginx snippet, reloads stack.
+# Pulls latest main, sets ADMIN_PUBLIC_PORT=443, installs Nginx config, reloads stack.
 
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/nofal-panel}"
 ENV_FILE="${ENV_FILE:-$APP_DIR/.env}"
 NGX_SRC="$APP_DIR/ops/nginx/nofal-panel.conf"
-NGX_AVAIL="${NGX_AVAIL:-/etc/nginx/sites-available/nofal-panel.conf}"
-NGX_EN="${NGX_EN:-/etc/nginx/sites-enabled/nofal-panel.conf}"
+# Canonical site name on existing installs (avoid duplicate sites-enabled entries)
+NGX_AVAIL="${NGX_AVAIL:-/etc/nginx/sites-available/nofal-panel}"
+NGX_EN="${NGX_EN:-/etc/nginx/sites-enabled/nofal-panel}"
 
 die() { echo "[FAIL] $*" >&2; exit 1; }
 
@@ -33,6 +34,9 @@ fi
 
 cp -a "$NGX_SRC" "$NGX_AVAIL"
 ln -sf "$NGX_AVAIL" "$NGX_EN"
+# Remove duplicate enable left by older script versions
+rm -f /etc/nginx/sites-enabled/nofal-panel.conf
+
 nginx -t
 systemctl reload nginx
 
@@ -43,4 +47,4 @@ else
   systemctl restart nofal-panel-user 2>/dev/null || true
 fi
 
-echo "[OK] HTTPS 443 → admin backend; ADMIN_PUBLIC_PORT=443. Check: curl -k -sI https://127.0.0.1/ -H 'Host: your-ip'"
+echo "[OK] HTTPS 443 → admin; ADMIN_PUBLIC_PORT=443. Test: curl -k -sI https://127.0.0.1/"
