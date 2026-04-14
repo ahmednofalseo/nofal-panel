@@ -1,6 +1,7 @@
 """cPanel File Manager Router"""
 import os
 import shutil
+from typing import List
 from fastapi import APIRouter, Depends, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -65,7 +66,7 @@ async def file_manager(request: Request, path: str = "", db: Session = Depends(g
 async def upload_file(
     request: Request,
     path: str = Form(""),
-    files: list[UploadFile] = File(...),
+    files: List[UploadFile] = File(...),
     user=Depends(get_cpanel_user)
 ):
     upload_dir = safe_path(user.username, path)
