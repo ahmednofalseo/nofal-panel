@@ -1,7 +1,6 @@
 """cPanel SSL Router - SSL Certificate Management"""
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_cpanel_user
@@ -9,9 +8,9 @@ from app.models.ssl_cert import SSLCert
 from app.models.domain import Domain
 from app.services.certbot import SSLService
 from app.services.nginx import NginxService
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-ssl"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/ssl", response_class=HTMLResponse)

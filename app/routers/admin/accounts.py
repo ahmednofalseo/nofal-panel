@@ -4,7 +4,6 @@ Create, Terminate, Suspend, Modify hosting accounts
 """
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.database import get_db
@@ -15,9 +14,9 @@ from app.models.domain import Domain
 from app.models.activity_log import ActivityLog
 from app.config import settings
 from app.services.account_manager import AccountManager
+from app.templating import templates
 
 router = APIRouter(prefix="/admin", tags=["admin-accounts"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/accounts", response_class=HTMLResponse)

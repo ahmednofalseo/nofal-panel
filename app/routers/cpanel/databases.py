@@ -3,15 +3,14 @@ cPanel Databases Router - MySQL Database Management
 """
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_cpanel_user
 from app.models.db_account import DatabaseAccount
 from app.services.mysql_service import MySQLService
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-databases"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/databases", response_class=HTMLResponse)

@@ -1,16 +1,15 @@
 """cPanel FTP Router"""
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_cpanel_user, get_password_hash
 from app.models.ftp_account import FtpAccount
 from app.services.vsftpd import FTPService
 from app.config import settings
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-ftp"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/ftp", response_class=HTMLResponse)

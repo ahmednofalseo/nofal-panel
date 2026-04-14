@@ -3,14 +3,13 @@ Admin Packages Router - Hosting Package/Plan Management
 """
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_admin_user
 from app.models.package import Package
+from app.templating import templates
 
 router = APIRouter(prefix="/admin", tags=["admin-packages"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/packages", response_class=HTMLResponse)

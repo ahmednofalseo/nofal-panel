@@ -12,11 +12,10 @@ import subprocess
 import json
 from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from app.auth import get_cpanel_user, decode_token
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-terminal"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/terminal", response_class=HTMLResponse)

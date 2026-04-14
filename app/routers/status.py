@@ -3,15 +3,14 @@ Operational status page + JSON API (requires login).
 """
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.auth import get_current_user_from_cookie
 from app.status_registry import REGISTRY, counts_by_status
+from app.templating import templates
 
 router = APIRouter(tags=["status"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/status", response_class=HTMLResponse)

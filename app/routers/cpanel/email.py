@@ -5,7 +5,6 @@ from urllib.parse import quote, quote_plus
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import get_cpanel_user, get_password_hash
@@ -14,10 +13,9 @@ from app.database import get_db
 from app.models.domain import Domain
 from app.models.email_account import EmailAccount
 from app.services.postfix import MailService
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-email"])
-templates = Jinja2Templates(directory="app/templates")
-templates.env.filters["urlq"] = lambda s: quote(str(s), safe="")
 
 
 def _mail_hosts(request: Request) -> dict:

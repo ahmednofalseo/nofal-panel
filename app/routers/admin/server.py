@@ -3,7 +3,6 @@ Admin Server Router - Server Management (WHM Server Config)
 """
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_admin_user
@@ -11,9 +10,9 @@ from app.services.system import SystemService
 from app.services.nginx import NginxService
 from app.services.mysql_service import MySQLService
 from app.services.postfix import MailService
+from app.templating import templates
 
 router = APIRouter(prefix="/admin", tags=["admin-server"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

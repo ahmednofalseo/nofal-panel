@@ -3,14 +3,13 @@ cPanel Dashboard Router
 """
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_cpanel_user
 from app.services.system import SystemService
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

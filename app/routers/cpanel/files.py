@@ -4,14 +4,13 @@ import shutil
 from typing import List
 from fastapi import APIRouter, Depends, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_cpanel_user
 from app.config import settings
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-files"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 def get_user_home(username: str) -> str:

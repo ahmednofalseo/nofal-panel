@@ -12,7 +12,6 @@ from typing import Dict, List, Optional, Tuple
 import dns.resolver
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import get_cpanel_user
@@ -21,9 +20,9 @@ from app.database import get_db
 from app.models.domain import DNSRecord, Domain
 from app.models.email_account import EmailAccount
 from app.models.user_preference import pref_get_json, pref_get_text, pref_set_json, pref_set_text
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-features"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 def _account_home(user) -> Path:

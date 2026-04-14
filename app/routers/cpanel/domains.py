@@ -3,7 +3,6 @@ cPanel Domains Router - Domain, Subdomain, Addon, Parked, Redirects
 """
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_cpanel_user
@@ -11,9 +10,9 @@ from app.models.domain import Domain
 from app.services.nginx import NginxService
 from app.services.bind9 import DNSService
 from app.config import settings
+from app.templating import templates
 
 router = APIRouter(prefix="/cpanel", tags=["cpanel-domains"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/domains", response_class=HTMLResponse)

@@ -6,11 +6,12 @@ import platform
 from fastapi import FastAPI, Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, JSONResponse
 import uvicorn
 
 from app.config import settings
+from app.paths import STATIC_DIR
+from app.templating import templates
 from app.database import init_db, get_db, SessionLocal
 from app.auth import get_password_hash
 
@@ -24,10 +25,7 @@ app = FastAPI(
 )
 
 # ─── Static Files ─────────────────────────────────────────────────────────────
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# ─── Templates ────────────────────────────────────────────────────────────────
-templates = Jinja2Templates(directory="app/templates")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # ─── Include Routers ─────────────────────────────────────────────────────────
 from app.routers import auth
