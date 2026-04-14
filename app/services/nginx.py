@@ -3,6 +3,7 @@ Nginx Service - Virtual Host Management
 Creates, updates, deletes Nginx virtual hosts for hosting accounts
 """
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -90,6 +91,15 @@ server {{
 class NginxService:
 
     @staticmethod
+    def _nginx_bin() -> str:
+        """Resolve nginx binary path even under restricted systemd PATH."""
+        return (
+            shutil.which("nginx")
+            or "/usr/sbin/nginx"
+            or "/usr/bin/nginx"
+        )
+
+    @staticmethod
     def _run(cmd: str) -> Dict[str, Any]:
         try:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
@@ -151,7 +161,7 @@ class NginxService:
                 os.symlink(config_file, symlink)
 
             # Test and reload Nginx
-            test = NginxService._run("nginx -t")
+            test = NginxService._run(f"{NginxService._nginx_bin()} -t")
             if test["success"]:
                 NginxService._run("systemctl reload nginx")
                 return {"success": True, "message": f"Virtual host created for {domain}", "config_file": config_file}
@@ -208,7 +218,7 @@ class NginxService:
 
     @staticmethod
     def test_config() -> Dict[str, Any]:
-        return NginxService._run("nginx -t")
+        return NginxService._run(f"{NginxService._nginx_bin()} -t")
 
     @staticmethod
     def get_status() -> Dict[str, Any]:
