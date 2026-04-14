@@ -1,8 +1,225 @@
 {% extends "cpanel/base_cpanel.html" %}
-{% block title %}Email - Nofal Panel{% endblock %}
+{% block title %}حسابات البريد — Nofal Panel{% endblock %}
+{% block extra_css %}
+<style>
+  .email-hero { background: linear-gradient(135deg, #0d47a1 0%, #1565c0 45%, #1976d2 100%); color: #fff; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 8px 24px rgba(13,71,161,.25); }
+  .email-hero h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 .35rem; }
+  .email-hero p { margin: 0; opacity: .9; font-size: .875rem; }
+  .email-stat { background: rgba(255,255,255,.12); border-radius: 8px; padding: .65rem 1rem; text-align: center; }
+  .email-stat .num { font-size: 1.25rem; font-weight: 700; display: block; }
+  .email-stat .lbl { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; opacity: .85; }
+  .email-table-wrap { border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+  .email-table thead th { background: #f8fafc; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+  .email-table tbody td { vertical-align: middle; font-size: .875rem; }
+  .email-quota-bar { height: 6px; border-radius: 4px; background: #e2e8f0; overflow: hidden; max-width: 120px; }
+  .email-quota-bar > div { height: 100%; background: linear-gradient(90deg, #1976d2, #42a5f5); }
+  .btn-email-primary { background: linear-gradient(135deg, #1565c0, #0d47a1); border: none; color: #fff; }
+  .btn-email-primary:hover { color: #fff; filter: brightness(1.06); }
+  .copy-chip { cursor: pointer; font-size: .75rem; padding: .15rem .45rem; border-radius: 4px; background: #e2e8f0; border: none; }
+  .copy-chip:hover { background: #cbd5e1; }
+  .conn-grid dt { font-size: .7rem; color: #64748b; text-transform: uppercase; }
+  .conn-grid dd { font-size: .8rem; margin-bottom: .5rem; font-family: ui-monospace, monospace; }
+</style>
+{% endblock %}
 {% block content %}
-<div class="page-header"><h2><i class="fas fa-circle me-2"></i>Email</h2></div>
-<div class="card panel-card"><div class="card-body">
-  <p class="text-muted">Module loaded. Full UI is available.</p>
-</div></div>
+<div class="email-hero row align-items-center g-3">
+  <div class="col-lg-7">
+    <h1><i class="fas fa-envelope me-2"></i>حسابات البريد</h1>
+    <p>إنشاء صناديق بريد، فتح الويب ميل، وإعدادات IMAP / SMTP جاهزة للنسخ.</p>
+  </div>
+  <div class="col-lg-5">
+    <div class="row g-2">
+      <div class="col-6">
+        <div class="email-stat">
+          <span class="num">{{ email_count }}{% if email_limit is not none %} / {{ email_limit }}{% endif %}</span>
+          <span class="lbl">صناديق</span>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="email-stat">
+          <span class="num">{% if mail_system_ready %}<i class="fas fa-check text-success"></i>{% else %}<i class="fas fa-database"></i>{% endif %}</span>
+          <span class="lbl">{% if mail_system_ready %}خادم بريد{% else %}وضع اللوحة{% endif %}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if request.query_params.get('mail_mode') == 'panel' %}
+<div class="alert alert-info d-flex align-items-center gap-2"><i class="fas fa-info-circle"></i>
+  <span>التسجيل في <strong>قاعدة اللوحة</strong> فقط. لربط Postfix/Dovecot على هذا الخادم، تهيئة الملفات القابلة للكتابة ثم إعادة إنشاء الصندوق من الخادم.</span>
+</div>
+{% endif %}
+
+{% if not domain_options %}
+<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>لا يوجد نطاق رئيسي أو إضافي. عيّن <strong>النطاق الأساسي</strong> للحساب من الـ WHM أو أضف نطاقاً من <a href="/cpanel/domains">النطاقات</a> لإنشاء بريد.</div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-xl-5">
+    <div class="card jupiter-card h-100">
+      <div class="card-header jupiter-card-header"><i class="fas fa-plus-circle me-2"></i>إنشاء صندوق بريد</div>
+      <div class="card-body">
+        <form method="post" action="/cpanel/email/create" id="formCreateEmail" class="needs-validation" novalidate>
+          <div class="row g-2 mb-2">
+            <div class="col-7">
+              <label class="form-label small text-muted mb-0">اسم المستخدم</label>
+              <input name="email_user" class="form-control form-control-sm" placeholder="contact" required pattern="[a-zA-Z0-9._-]+" autocomplete="off">
+            </div>
+            <div class="col-5">
+              <label class="form-label small text-muted mb-0">الحصة (MB)</label>
+              <input type="number" name="quota_mb" class="form-control form-control-sm" value="1024" min="64" max="102400" step="64">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small text-muted mb-0">النطاق</label>
+            <select name="email_domain" class="form-select form-select-sm" required {% if not domain_options %}disabled{% endif %}>
+              {% for d in domain_options %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-muted mb-0">كلمة المرور (8 أحرف على الأقل)</label>
+            <input type="password" name="password" class="form-control form-control-sm" minlength="8" required autocomplete="new-password" id="newMailPw">
+            <div class="progress mt-1" style="height:3px;"><div class="progress-bar" id="pwMeter" style="width:0%"></div></div>
+          </div>
+          <button type="submit" class="btn btn-email-primary btn-sm w-100" {% if not domain_options %}disabled{% endif %}><i class="fas fa-paper-plane me-1"></i> إنشاء الصندوق</button>
+        </form>
+        {% if mail_hosts.webmail_url %}
+        <hr class="my-3">
+        <p class="small text-muted mb-0"><i class="fas fa-external-link-alt me-1"></i> الويب ميل: <a href="{{ mail_hosts.webmail_url }}" target="_blank" rel="noopener">{{ mail_hosts.webmail_url }}</a></p>
+        {% else %}
+        <hr class="my-3">
+        <p class="small text-muted mb-0">لتفعيل زر «فتح البريد»، عيّن <code>WEBMAIL_URL</code> في ملف البيئة (مثال Roundcube).</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-7">
+    <div class="card jupiter-card mb-3">
+      <div class="card-header jupiter-card-header py-2"><i class="fas fa-server me-2"></i>حالة خدمات البريد على الخادم</div>
+      <div class="card-body py-2 small">
+        {% if mail_system_ready %}
+        <span class="me-3"><strong>Postfix:</strong> <code>{{ mail_services.postfix }}</code></span>
+        <span><strong>Dovecot:</strong> <code>{{ mail_services.dovecot }}</code></span>
+        {% else %}
+        <span class="text-muted">اللوحة لا تكتب في <code>/etc/postfix</code> / <code>/etc/dovecot</code> — الصناديق تُدار في قاعدة البيانات ويُعرض لك IMAP/SMTP أدناه.</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card jupiter-card">
+      <div class="card-header jupiter-card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-inbox me-2"></i>صناديقك</span>
+      </div>
+      <div class="card-body p-0">
+        {% if emails %}
+        <div class="table-responsive email-table-wrap">
+          <table class="table table-hover email-table mb-0">
+            <thead><tr><th>العنوان</th><th>الحصة</th><th class="text-end">إجراءات</th></tr></thead>
+            <tbody>
+              {% for m in emails %}
+              {% set pct = ((100 * m.used_mb / m.quota_mb) | int) if m.quota_mb and m.quota_mb > 0 else 0 %}
+              {% set barw = pct if pct < 100 else 100 %}
+              <tr>
+                <td>
+                  <strong class="text-primary">{{ m.email }}</strong>
+                  {% if m.is_forwarder and m.forward_to %}<br><small class="text-muted">→ {{ m.forward_to }}</small>{% endif %}
+                </td>
+                <td>
+                  <small>{{ m.used_mb }} / {{ m.quota_mb }} MB</small>
+                  <div class="email-quota-bar mt-1"><div style="width:{{ barw }}%"></div></div>
+                </td>
+                <td class="text-end text-nowrap">
+                  {% if mail_hosts.webmail_url %}
+                  <a href="/cpanel/email/open-webmail?account={{ m.email | urlq }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary"><i class="fas fa-envelope-open-text"></i> فتح</a>
+                  {% endif %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#conn{{ m.id }}"><i class="fas fa-plug"></i></button>
+                  <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#pwdModal{{ m.id }}"><i class="fas fa-key"></i></button>
+                  <form method="post" action="/cpanel/email/{{ m.id }}/delete" class="d-inline" onsubmit="return confirm('حذف {{ m.email }} نهائياً؟');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              <tr class="collapse bg-light" id="conn{{ m.id }}">
+                <td colspan="3" class="small py-3">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <h6 class="text-uppercase text-muted mb-2" style="font-size:.65rem;">استقبال (IMAP)</h6>
+                      <dl class="conn-grid mb-0">
+                        <dt>الخادم</dt><dd><span id="ih{{ m.id }}">{{ mail_hosts.imap_host }}</span> <button type="button" class="copy-chip" data-copy="ih{{ m.id }}">نسخ</button></dd>
+                        <dt>المنفذ</dt><dd><span id="ip{{ m.id }}">{{ mail_hosts.imap_port }}</span> <button type="button" class="copy-chip" data-copy="ip{{ m.id }}">نسخ</button></dd>
+                        <dt>التشفير</dt><dd>SSL/TLS</dd>
+                        <dt>اسم المستخدم</dt><dd><span id="iu{{ m.id }}">{{ m.email }}</span> <button type="button" class="copy-chip" data-copy="iu{{ m.id }}">نسخ</button></dd>
+                      </dl>
+                    </div>
+                    <div class="col-md-6">
+                      <h6 class="text-uppercase text-muted mb-2" style="font-size:.65rem;">إرسال (SMTP)</h6>
+                      <dl class="conn-grid mb-0">
+                        <dt>الخادم</dt><dd><span id="sh{{ m.id }}">{{ mail_hosts.smtp_host }}</span> <button type="button" class="copy-chip" data-copy="sh{{ m.id }}">نسخ</button></dd>
+                        <dt>المنفذ</dt><dd>{{ mail_hosts.smtp_port }} (STARTTLS) أو {{ mail_hosts.smtp_port_ssl }} (SSL)</dd>
+                        <dt>المصادقة</dt><dd>نعم — نفس البريد وكلمة المرور</dd>
+                      </dl>
+                    </div>
+                  </div>
+                  <p class="mb-0 mt-2 text-muted" style="font-size:.75rem;">استخدم تطبيق البريد على الجوال أو Outlook / Thunderbird بهذه القيم.</p>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% for m in emails %}
+        <div class="modal fade" id="pwdModal{{ m.id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header py-2"><h6 class="modal-title">تغيير كلمة المرور — {{ m.email }}</h6><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+              <form method="post" action="/cpanel/email/{{ m.id }}/change-password">
+                <div class="modal-body">
+                  <label class="form-label small">كلمة مرور جديدة (8+)</label>
+                  <input type="password" name="new_password" class="form-control form-control-sm" minlength="8" required autocomplete="new-password">
+                </div>
+                <div class="modal-footer py-2">
+                  <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                  <button type="submit" class="btn btn-primary btn-sm">حفظ</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="p-4 text-center text-muted small">لا صناديق بعد. أنشئ أول صندوق من النموذج.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function(){
+  var pw = document.getElementById('newMailPw');
+  var meter = document.getElementById('pwMeter');
+  if (pw && meter) {
+    pw.addEventListener('input', function(){
+      var v = pw.value.length;
+      var w = Math.min(100, v * 12);
+      meter.style.width = w + '%';
+      meter.className = 'progress-bar' + (v >= 10 ? ' bg-success' : v >= 8 ? ' bg-warning' : ' bg-danger');
+    });
+  }
+  document.querySelectorAll('[data-copy]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.getAttribute('data-copy');
+      var el = document.getElementById(id);
+      if (!el) return;
+      var t = el.textContent.trim();
+      navigator.clipboard.writeText(t).then(function(){
+        var o = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(function(){ btn.textContent = o; }, 1200);
+      });
+    });
+  });
+})();
+</script>
 {% endblock %}

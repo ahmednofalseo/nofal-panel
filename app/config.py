@@ -37,6 +37,14 @@ class Settings:
     NGINX_ACCESS_LOG: str = os.getenv("NGINX_ACCESS_LOG", "/var/log/nginx/access.log")
     NGINX_ERROR_LOG: str = os.getenv("NGINX_ERROR_LOG", "/var/log/nginx/error.log")
 
+    # Email clients (cPanel Email Accounts — IMAP / SMTP / Webmail)
+    WEBMAIL_URL: str = os.getenv("WEBMAIL_URL", "").rstrip("/")
+    MAIL_IMAP_HOST: str = os.getenv("MAIL_IMAP_HOST", "")
+    MAIL_SMTP_HOST: str = os.getenv("MAIL_SMTP_HOST", "")
+    MAIL_IMAP_PORT: int = int(os.getenv("MAIL_IMAP_PORT", "993"))
+    MAIL_SMTP_PORT: int = int(os.getenv("MAIL_SMTP_PORT", "587"))
+    MAIL_SMTP_PORT_SSL: int = int(os.getenv("MAIL_SMTP_PORT_SSL", "465"))
+
     PANEL_VERSION: str = "1.0.0"
 
 settings = Settings()
