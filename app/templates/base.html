@@ -18,8 +18,20 @@
 // CSRF: inject token into all POST forms (server-side verified).
 (function () {
   function getCookie(name) {
-    const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\\[\\]\\\\\\/\\+^])/g, '\\\\$1') + '=([^;]*)'));
-    return m ? decodeURIComponent(m[1]) : null;
+    const nameEQ = name + '=';
+    const parts = document.cookie.split(';');
+    for (let i = 0; i < parts.length; i++) {
+      let c = parts[i];
+      while (c.charAt(0) === ' ') c = c.substring(1);
+      if (c.indexOf(nameEQ) !== 0) continue;
+      const raw = c.substring(nameEQ.length);
+      try {
+        return decodeURIComponent(raw);
+      } catch (e) {
+        return raw;
+      }
+    }
+    return null;
   }
   const csrfName = "{{ CSRF_COOKIE_NAME | default('csrf_token') }}";
   const token = getCookie(csrfName);
