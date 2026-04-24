@@ -9,6 +9,8 @@ Like WHM's "Create Account" - does everything in one shot:
   - Directory structure
 """
 import os
+import shlex
+import shutil
 import subprocess
 import secrets
 import string
@@ -254,6 +256,28 @@ Managed by Nofal Panel v1.0
             return {"success": False, "error": str(e)}
 
     @staticmethod
+    def _set_unix_password(username: str, password: str) -> Dict[str, Any]:
+        """Set Linux password via chpasswd stdin (avoids shell quoting / injection)."""
+        if "\n" in username or "\n" in password or ":" in username:
+            return {"success": False, "error": "Invalid characters in username or password"}
+        chpasswd_bin = shutil.which("chpasswd") or "/usr/sbin/chpasswd"
+        try:
+            proc = subprocess.run(
+                [chpasswd_bin],
+                input=f"{username}:{password}\n",
+                text=True,
+                capture_output=True,
+                timeout=60,
+            )
+            return {
+                "success": proc.returncode == 0,
+                "output": (proc.stdout or "").strip(),
+                "error": (proc.stderr or "").strip(),
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    @staticmethod
     def generate_password(length: int = 16) -> str:
         chars = string.ascii_letters + string.digits + "!@#$%^&*()"
         return ''.join(secrets.choice(chars) for _ in range(length))
@@ -284,13 +308,29 @@ Managed by Nofal Panel v1.0
 
         try:
             # ─── Step 1: Create Linux System User ───────────────────────────
-            r = AccountManager._run(f"id {username} 2>/dev/null")
+            r = AccountManager._run(f"id {shlex.quote(username)} 2>/dev/null")
             if r["success"]:
                 results["steps"]["linux_user"] = {"status": "exists", "msg": f"User {username} already exists"}
             else:
-                r = AccountManager._run(f"useradd -m -s /bin/bash -d {home_dir} {username}")
-                AccountManager._run(f"echo '{username}:{password}' | chpasswd")
-                results["steps"]["linux_user"] = {"status": "ok" if r["success"] else "error", "msg": r.get("output", r.get("error", ""))}
+                r = AccountManager._run(
+                    f"useradd -m -s /bin/bash -d {shlex.quote(home_dir)} {shlex.quote(username)}"
+                )
+                pw = AccountManager._set_unix_password(username, password) if r["success"] else {"success": True}
+                linux_ok = r["success"] and pw.get("success", False)
+                linux_msg = (
+                    (r.get("error") or r.get("output", "")).strip()
+                    if not r["success"]
+                    else (pw.get("error") or pw.get("output", "") or "ok").strip()
+                )
+                results["steps"]["linux_user"] = {
+                    "status": "ok" if linux_ok else "error",
+                    "msg": linux_msg,
+                }
+
+            lu = results["steps"].get("linux_user") or {}
+            if lu.get("status") == "error":
+                results["error"] = lu.get("msg", "Linux user setup failed")
+                return results
 
             # ─── Step 2: Create Directory Structure ──────────────────────────
             dirs = [
@@ -308,10 +348,12 @@ Managed by Nofal Panel v1.0
             for d in dirs:
                 os.makedirs(d, exist_ok=True)
 
-            AccountManager._run(f"chown -R {username}:{username} {home_dir}")
-            AccountManager._run(f"chmod 755 {home_dir}")
-            AccountManager._run(f"chmod 750 {home_dir}/.ssh")
-            AccountManager._run(f"chmod 711 {public_html}/cgi-bin")
+            AccountManager._run(
+                f"chown -R {shlex.quote(username)}:{shlex.quote(username)} {shlex.quote(home_dir)}"
+            )
+            AccountManager._run(f"chmod 755 {shlex.quote(home_dir)}")
+            AccountManager._run(f"chmod 750 {shlex.quote(home_dir + '/.ssh')}")
+            AccountManager._run(f"chmod 711 {shlex.quote(public_html + '/cgi-bin')}")
 
             # Create all default files
             AccountManager._create_default_files(username, domain, public_html, home_dir)
@@ -406,7 +448,7 @@ Managed by Nofal Panel v1.0
         results["steps"]["mysql_user"] = mysql_r
 
         # Step 5: Remove Linux user and home dir
-        r = AccountManager._run(f"userdel -r {username} 2>/dev/null")
+        r = AccountManager._run(f"userdel -r {shlex.quote(username)} 2>/dev/null")
         results["steps"]["linux_user"] = {"success": True, "msg": "Linux user removed"}
 
         results["success"] = True
@@ -415,19 +457,19 @@ Managed by Nofal Panel v1.0
     @staticmethod
     def suspend_account(username: str) -> Dict[str, Any]:
         """Suspend a hosting account"""
-        r1 = AccountManager._run(f"usermod -L {username}")  # Lock Linux user
-        r2 = AccountManager._run(f"usermod -s /bin/false {username}")  # Disable shell
+        r1 = AccountManager._run(f"usermod -L {shlex.quote(username)}")  # Lock Linux user
+        r2 = AccountManager._run(f"usermod -s /bin/false {shlex.quote(username)}")  # Disable shell
         return {"success": r1["success"], "message": f"Account {username} suspended"}
 
     @staticmethod
     def unsuspend_account(username: str) -> Dict[str, Any]:
         """Unsuspend a hosting account"""
-        r1 = AccountManager._run(f"usermod -U {username}")  # Unlock Linux user
-        r2 = AccountManager._run(f"usermod -s /bin/bash {username}")  # Re-enable shell
+        r1 = AccountManager._run(f"usermod -U {shlex.quote(username)}")  # Unlock Linux user
+        r2 = AccountManager._run(f"usermod -s /bin/bash {shlex.quote(username)}")  # Re-enable shell
         return {"success": r1["success"], "message": f"Account {username} unsuspended"}
 
     @staticmethod
     def change_account_password(username: str, new_password: str) -> Dict[str, Any]:
         """Change the main account (cPanel login) password"""
-        r = AccountManager._run(f"echo '{username}:{new_password}' | chpasswd")
+        r = AccountManager._set_unix_password(username, new_password)
         return {"success": r["success"], "message": f"Password changed for {username}"}

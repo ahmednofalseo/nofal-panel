@@ -6,6 +6,7 @@ import subprocess
 import psutil
 import os
 import platform
+import shlex
 from datetime import datetime
 from typing import Dict, List, Any
 
@@ -153,10 +154,12 @@ class SystemService:
         services = [
             {"name": "nginx", "display": "Nginx Web Server"},
             {"name": "apache2", "display": "Apache Web Server"},
-            {"name": "mysql", "display": "MySQL Database"},
+            {"name": "mysql", "display": "MySQL / MariaDB (mysql.service)"},
+            {"name": "mysqld", "display": "MySQL (mysqld.service, RHEL-style)"},
             {"name": "postfix", "display": "Postfix Mail (SMTP)"},
             {"name": "dovecot", "display": "Dovecot Mail (IMAP/POP3)"},
-            {"name": "bind9", "display": "BIND9 DNS Server"},
+            {"name": "bind9", "display": "BIND9 DNS (Debian/Ubuntu)"},
+            {"name": "named", "display": "BIND named (RHEL-style)"},
             {"name": "vsftpd", "display": "vsftpd FTP Server"},
             {"name": "fail2ban", "display": "Fail2ban Security"},
             {"name": "ufw", "display": "UFW Firewall"},
@@ -193,7 +196,18 @@ class SystemService:
     def manage_service(service_name: str, action: str) -> Dict[str, Any]:
         """Start, stop, restart, or reload a service"""
         allowed_actions = ["start", "stop", "restart", "reload", "status"]
-        allowed_services = ["nginx", "apache2", "mysql", "postfix", "dovecot", "bind9", "vsftpd", "fail2ban"]
+        allowed_services = [
+            "nginx",
+            "apache2",
+            "mysql",
+            "mysqld",
+            "postfix",
+            "dovecot",
+            "bind9",
+            "named",
+            "vsftpd",
+            "fail2ban",
+        ]
 
         if action not in allowed_actions:
             return {"success": False, "error": f"Invalid action: {action}"}
@@ -221,7 +235,8 @@ class SystemService:
     @staticmethod
     def get_user_disk_usage(username: str, home_dir: str = "/home") -> int:
         """Get disk usage for a specific user in MB"""
-        result = SystemService.run_command(f"du -sm {home_dir}/{username} 2>/dev/null | cut -f1")
+        _path = f"{home_dir.rstrip('/')}/{username}"
+        result = SystemService.run_command(f"du -sm {shlex.quote(_path)} 2>/dev/null | cut -f1")
         try:
             return int(result.get("stdout", 0))
         except:

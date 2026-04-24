@@ -1,6 +1,8 @@
 """
 Admin DNS Router - DNS Zone Management (WHM DNS Functions)
 """
+from urllib.parse import quote_plus
+
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
@@ -54,16 +56,25 @@ async def add_dns_record(
     if not domain:
         raise HTTPException(status_code=404)
 
-    # Save to DB
+    # BIND zone first so panel DB does not diverge if zone write fails.
+    result = DNSService.add_record(domain_name, record_type, name, value, ttl, priority)
+    if not result.get("success"):
+        err = (result.get("error") or result.get("message") or "Zone update failed")[:400]
+        return RedirectResponse(
+            url=f"/admin/dns/{domain_name}/edit?error={quote_plus(err)}",
+            status_code=302,
+        )
+
     record = DNSRecord(
-        domain_id=domain.id, record_type=record_type,
-        name=name, value=value, ttl=ttl, priority=priority
+        domain_id=domain.id,
+        record_type=record_type,
+        name=name,
+        value=value,
+        ttl=ttl,
+        priority=priority,
     )
     db.add(record)
     db.commit()
-
-    # Add to zone file
-    result = DNSService.add_record(domain_name, record_type, name, value, ttl, priority)
 
     return RedirectResponse(url=f"/admin/dns/{domain_name}/edit?success=Record+added", status_code=302)
 
