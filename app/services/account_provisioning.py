@@ -30,63 +30,41 @@ class AccountProvisioningService:
     @staticmethod
     def create_account(
         db: Session,
+        user: User,
         *,
-        username: str,
-        email: str,
-        password: str,
+        plaintext_password: str,
         domain: str,
         ip_address: str,
         package: dict[str, Any],
-        first_name: str = "",
-        last_name: str = "",
-        company: str = "",
     ) -> ProvisionResult:
-        # DB record
-        new_user = User(
-            username=username,
-            email=email,
-            hashed_password="",  # must be set by caller (router) to keep auth logic centralized
-            role="user",
-            first_name=first_name,
-            last_name=last_name,
-            company=company,
-            primary_domain=domain,
-            ip_address=ip_address,
-            server_user=username,
-            package_id=package.get("package_id"),
-            disk_quota_mb=package.get("disk_quota_mb", 1024),
-            bandwidth_limit_mb=package.get("bandwidth_limit_mb", 10240),
-            email_limit=package.get("email_limit", 10),
-            db_limit=package.get("db_limit", 5),
-            ftp_limit=package.get("ftp_limit", 5),
-            subdomain_limit=package.get("subdomain_limit", 10),
-            addon_domain_limit=package.get("addon_domain_limit", 2),
-        )
-        db.add(new_user)
-        db.flush()
-
+        """
+        Attach server resources to an existing panel ``User`` row (already flushed by the router).
+        Must not insert a second user with the same username — that used to break provisioning.
+        """
         # Allocate port for future instances/apps.
-        allocated = PortAllocatorService.allocate_for_user(db, new_user.id, purpose="instance")
+        allocated = PortAllocatorService.allocate_for_user(db, user.id, purpose="instance")
 
-        # Server-side provisioning
+        # Server-side provisioning (Linux user, nginx, DNS, mail, MySQL FTP, …)
         res = AccountManager.create_account(
-            username=username,
+            username=user.username,
             domain=domain,
-            password=password,
-            email=email,
+            password=plaintext_password,
+            email=user.email,
             ip_address=ip_address,
             package=package,
         )
         if not res.get("success"):
-            PortAllocatorService.release_user_ports(db, new_user.id)
-            db.delete(new_user)
-            db.flush()
-            return ProvisionResult(success=False, error=str(res.get("error") or "provisioning failed"), details=res)
+            PortAllocatorService.release_user_ports(db, user.id)
+            return ProvisionResult(
+                success=False,
+                error=str(res.get("error") or "provisioning failed"),
+                details={"result": res},
+            )
 
-        pub = res.get("account_info", {}).get("public_html") or f"{settings.ACCOUNTS_HOME}/{username}/public_html"
+        pub = res.get("account_info", {}).get("public_html") or f"{settings.ACCOUNTS_HOME}/{user.username}/public_html"
         db.add(
             Domain(
-                user_id=new_user.id,
+                user_id=user.id,
                 domain_name=domain.strip().lower(),
                 domain_type="main",
                 document_root=pub,

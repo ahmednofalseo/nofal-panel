@@ -118,15 +118,11 @@ async def create_account(
     # Use enterprise provisioning wrapper (ports + domain row).
     prov = AccountProvisioningService.create_account(
         db,
-        username=username,
-        email=email,
-        password=password,
+        new_user,
+        plaintext_password=password,
         domain=domain,
         ip_address=ip_address,
         package=pkg_dict,
-        first_name=first_name,
-        last_name=last_name,
-        company=company,
     )
     result = prov.details.get("result") if prov.details else {"success": prov.success, "error": prov.error}
 
