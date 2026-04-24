@@ -59,6 +59,8 @@ async def create_account(
     db: Session = Depends(get_db),
     admin=Depends(get_admin_user)
 ):
+    # Visible in journalctl when diagnosing hangs (nginx only logs after response completes).
+    print(f"[nofal] CREATE_ACCOUNT POST start username={username!r} domain={domain!r}", flush=True)
     packages = db.query(Package).filter(Package.is_active == True).all()
 
     # Validate
@@ -132,6 +134,7 @@ async def create_account(
         allocated_port = None
 
     if result["success"]:
+        print(f"[nofal] CREATE_ACCOUNT OK username={username!r}", flush=True)
         db.add(
             ActivityLog(
                 user_id=admin.id,
@@ -144,6 +147,7 @@ async def create_account(
         db.commit()
         return RedirectResponse(url=f"/admin/accounts?success=Account+{username}+created", status_code=302)
 
+    print(f"[nofal] CREATE_ACCOUNT FAIL username={username!r} err={result.get('error')!r}", flush=True)
     db.delete(new_user)
     db.add(
         ActivityLog(
