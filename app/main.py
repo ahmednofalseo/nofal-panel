@@ -86,13 +86,18 @@ def create_app() -> FastAPI:
                 "هذا الجهاز ليس Linux. أوامر WHM الحقيقية (systemctl، UFW، BIND، …) "
                 "تعمل على Ubuntu/Debian على الخادم. الواجهة تعرض البيانات المحلية المتاحة فقط."
             )
+        # Issue a CSRF token before the view renders so forms can echo it; cookie is set on response.
+        if not request.cookies.get(CSRF_COOKIE_NAME):
+            request.state.csrf_token = generate_csrf_token()
+
         response = await call_next(request)
 
-        # Ensure CSRF cookie exists for browser sessions.
+        # Ensure CSRF cookie exists for browser sessions (same value as hidden fields on this response).
         if not request.cookies.get(CSRF_COOKIE_NAME):
+            token = getattr(request.state, "csrf_token", None) or generate_csrf_token()
             response.set_cookie(
                 key=CSRF_COOKIE_NAME,
-                value=generate_csrf_token(),
+                value=token,
                 httponly=False,
                 samesite="lax",
                 secure=False,  # set True when serving HTTPS end-to-end

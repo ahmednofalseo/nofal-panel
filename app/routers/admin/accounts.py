@@ -131,26 +131,40 @@ async def create_account(
     else:
         allocated_port = None
 
-    # Log and save
-    log = ActivityLog(
-        user_id=admin.id, action="CREATE_ACCOUNT",
-        description=f"Created account for {username} ({domain}) port={allocated_port or '-'}",
-        ip_address=request.client.host,
-        status="success" if result["success"] else "error"
-    )
-    db.add(log)
-    db.commit()
-
     if result["success"]:
-        return RedirectResponse(url=f"/admin/accounts?success=Account+{username}+created", status_code=302)
-    else:
-        db.delete(new_user)
+        db.add(
+            ActivityLog(
+                user_id=admin.id,
+                action="CREATE_ACCOUNT",
+                description=f"Created account for {username} ({domain}) port={allocated_port or '-'}",
+                ip_address=request.client.host,
+                status="success",
+            )
+        )
         db.commit()
-        return templates.TemplateResponse("admin/accounts_create.html", {
-            "request": request, "user": admin, "packages": packages,
+        return RedirectResponse(url=f"/admin/accounts?success=Account+{username}+created", status_code=302)
+
+    db.delete(new_user)
+    db.add(
+        ActivityLog(
+            user_id=admin.id,
+            action="CREATE_ACCOUNT",
+            description=f"Failed for {username} ({domain}): {result.get('error', 'Unknown error')}",
+            ip_address=request.client.host,
+            status="error",
+        )
+    )
+    db.commit()
+    return templates.TemplateResponse(
+        "admin/accounts_create.html",
+        {
+            "request": request,
+            "user": admin,
+            "packages": packages,
             "error": f"Server setup failed: {result.get('error', 'Unknown error')}",
-            "steps": result.get("steps", {})
-        })
+            "steps": result.get("steps", {}),
+        },
+    )
 
 
 @router.post("/accounts/{user_id}/suspend")

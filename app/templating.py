@@ -13,10 +13,15 @@ templates.env.filters["urlq"] = lambda s: quote(str(s), safe="")
 
 
 def csrf_hidden(request: Request) -> Markup:
-    """Hidden input for POST forms when CSRF cookie exists (works without JS)."""
+    """Hidden input for POST forms; token must match CSRF cookie on submit.
+
+    When the browser has no CSRF cookie yet, ``runtime_notice_middleware`` puts a
+    fresh token on ``request.state`` and sets the cookie on the same response so
+    the hidden field and cookie stay in sync (avoids empty form + 403 on POST).
+    """
     if request is None:
         return Markup("")
-    token = request.cookies.get(CSRF_COOKIE_NAME)
+    token = request.cookies.get(CSRF_COOKIE_NAME) or getattr(request.state, "csrf_token", None)
     if not token:
         return Markup("")
     return Markup(f'<input type="hidden" name="csrf_token" value="{escape(token)}">')
